@@ -1,5 +1,124 @@
-﻿<h3>ListarTrabajadores</h3>
+﻿@page "/trabajadores"
+@inject ServiceTrabajador ServiceTrabajador
+@inject ServiceSesion ServiceSesion
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Trabajadores</PageTitle>
+
+<h3>Gestión de Trabajadores</h3>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <input type="text"
+           class="form-control w-50"
+           placeholder="Buscar por nombre, apellido o cargo..."
+           @bind="textoBusqueda"
+           @bind:event="oninput"
+           @onkeyup="Buscar" />
+
+    <button class="btn btn-primary" @onclick="IrARegistrar">
+        + Nuevo Trabajador
+    </button>
+</div>
+
+@if (trabajadores == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!trabajadores.Any())
+{
+    <div class="alert alert-info">No se encontraron trabajadores.</div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>CI</th>
+                <th>Cargo</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Comisión</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var trabajador in trabajadores)
+            {
+                <tr>
+                    <td>@trabajador.Nombre</td>
+                    <td>@trabajador.Apellido</td>
+                    <td>@trabajador.CI</td>
+                    <td>@trabajador.Cargo</td>
+                    <td>@trabajador.Telefono</td>
+                    <td>@trabajador.Email</td>
+                    <td>@trabajador.PorcentajeComision%</td>
+                    <td>
+                        @if (trabajador.Activo)
+                        {
+                            <span class="badge bg-success">Sí</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">No</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(trabajador.Id)">
+                            Editar
+                        </button>
+
+                        @if (ServiceSesion.EsAdmin)
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(trabajador.Id)">
+                                Eliminar
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    private List<CTrabajador> trabajadores = new();
+    private string textoBusqueda = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        trabajadores = ServiceTrabajador.ObtenerTodos();
+    }
+
+    private void Buscar()
+    {
+        trabajadores = string.IsNullOrWhiteSpace(textoBusqueda)
+            ? ServiceTrabajador.ObtenerTodos()
+            : ServiceTrabajador.Buscar(textoBusqueda);
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/trabajadores/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/trabajadores/registrar/{id}");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        if (!ServiceSesion.EsAdmin) return;
+
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea eliminar este trabajador?");
+        if (confirmado)
+        {
+            ServiceTrabajador.Eliminar(id);
+            trabajadores = ServiceTrabajador.ObtenerTodos();
+        }
+    }
 }
