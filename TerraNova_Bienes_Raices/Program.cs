@@ -10,6 +10,7 @@ builder.Services.AddScoped<ServiceCliente>();
 builder.Services.AddScoped<ServiceTrabajador>();
 builder.Services.AddScoped<ServicePropiedad>();
 builder.Services.AddScoped<ServiceVenta>();
+builder.Services.AddScoped<ServiceSesion>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 await builder.Build().RunAsync();

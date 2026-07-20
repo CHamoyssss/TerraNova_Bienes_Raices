@@ -1,5 +1,146 @@
-﻿<h3>RegistrarCliente</h3>
+﻿@page "/clientes/registrar"
+@page "/clientes/registrar/{Id:int}"
+@inject ServiceCliente ServiceCliente
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Cliente" : "Nuevo Cliente")</PageTitle>
+
+<h3>@(esEdicion ? "Editar Cliente" : "Registrar Nuevo Cliente")</h3>
+
+<EditForm Model="cliente" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+    @if (erroresNegocio.Any())
+    {
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach (var error in erroresNegocio)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Nombre</label>
+            <InputText class="form-control" @bind-Value="cliente.Nombre" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Apellido</label>
+            <InputText class="form-control" @bind-Value="cliente.Apellido" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Cédula de Identidad</label>
+            <InputText class="form-control" @bind-Value="cliente.CI" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Teléfono</label>
+            <InputText class="form-control" @bind-Value="cliente.Telefono" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="cliente.Email" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Tipo de Cliente</label>
+            <InputSelect class="form-select" @bind-Value="cliente.TipoCliente">
+                <option value="Comprador">Comprador</option>
+                <option value="Vendedor">Vendedor</option>
+                <option value="Ambos">Ambos</option>
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Dirección</label>
+        <InputText class="form-control" @bind-Value="cliente.Direccion" />
+    </div>
+
+    <button type="submit" class="btn btn-success me-2">
+        @(esEdicion ? "Actualizar" : "Guardar")
+    </button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+        Cancelar
+    </button>
+</EditForm>
 
 @code {
+    [Parameter]
+    public int? Id { get; set; }
 
+    private CCliente cliente = new();
+    private bool esEdicion => Id.HasValue;
+    private List<string> erroresNegocio = new();
+
+    protected override void OnInitialized()
+    {
+        if (esEdicion)
+        {
+            var existente = ServiceCliente.ObtenerPorId(Id!.Value);
+            if (existente != null)
+            {
+                cliente = new CCliente
+                {
+                    Id = existente.Id,
+                    Nombre = existente.Nombre,
+                    Apellido = existente.Apellido,
+                    CI = existente.CI,
+                    Telefono = existente.Telefono,
+                    Email = existente.Email,
+                    Direccion = existente.Direccion,
+                    TipoCliente = existente.TipoCliente,
+                    FechaRegistro = existente.FechaRegistro
+                };
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/clientes");
+            }
+        }
+    }
+
+    private void Guardar()
+    {
+        erroresNegocio.Clear();
+
+        int idParaExcluir = esEdicion ? cliente.Id : 0;
+
+        if (ServiceCliente.ExisteCI(cliente.CI, idParaExcluir))
+            erroresNegocio.Add("Ya existe un cliente registrado con esa CI.");
+
+        if (ServiceCliente.ExisteTelefono(cliente.Telefono, idParaExcluir))
+            erroresNegocio.Add("Ya existe un cliente registrado con ese teléfono.");
+
+        if (ServiceCliente.ExisteEmail(cliente.Email, idParaExcluir))
+            erroresNegocio.Add("Ya existe un cliente registrado con ese email.");
+
+        if (erroresNegocio.Any())
+            return; // no guarda, se muestran los errores en pantalla
+
+        if (esEdicion)
+        {
+            ServiceCliente.Actualizar(cliente);
+        }
+        else
+        {
+            ServiceCliente.Registrar(cliente);
+        }
+
+        NavigationManager.NavigateTo("/clientes");
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/clientes");
+    }
 }
