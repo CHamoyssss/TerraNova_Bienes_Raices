@@ -1,5 +1,179 @@
-﻿<h3>ListarPropiedades</h3>
+﻿@page "/propiedades"
+@inject ServicePropiedad ServicePropiedad
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Propiedades</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Propiedades</h2>
+            <p class="text-muted mb-0">Gestión del catálogo de propiedades</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-house-add"></i> Nueva Propiedad
+        </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <input type="text" class="form-control" placeholder="Buscar por título o dirección..."
+                       @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="tipoFiltro" @bind:after="Filtrar">
+                    <option value="">Todos los tipos</option>
+                    <option value="Casa">Casa</option>
+                    <option value="Departamento">Departamento</option>
+                    <option value="Terreno">Terreno</option>
+                    <option value="Oficina">Oficina</option>
+                    <option value="Local">Local</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="estadoFiltro" @bind:after="Filtrar">
+                    <option value="">Todos los estados</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Reservada">Reservada</option>
+                    <option value="Vendida">Vendida</option>
+                    <option value="Alquilada">Alquilada</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimpiarFiltros">
+                    <i class="bi bi-x-circle"></i> Limpiar filtros
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (propiedades == null)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (!propiedades.Any())
+    {
+        <div class="alert alert-info">No se encontraron propiedades con esos filtros.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Zona</th>
+                            <th>Precio</th>
+                            <th>Operación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var propiedad in propiedades)
+                        {
+                            <tr>
+                                <td>@propiedad.Id</td>
+                                <td>@propiedad.Titulo</td>
+                                <td>@propiedad.Tipo</td>
+                                <td>@propiedad.Zona</td>
+                                <td>@propiedad.Precio.ToString("C0")</td>
+                                <td>@propiedad.TipoOperacion</td>
+                                <td>
+                                    <span class="badge @ObtenerClaseEstado(propiedad.Estado)">@propiedad.Estado</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(propiedad.Id)">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(propiedad.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
+    private List<CPropiedad>? propiedades;
+    private string textoBusqueda = string.Empty;
+    private string tipoFiltro = string.Empty;
+    private string estadoFiltro = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        propiedades = ServicePropiedad.ObtenerTodas();
+    }
+
+    private void Filtrar()
+    {
+        propiedades = ServicePropiedad.Filtrar(
+            tipo: string.IsNullOrEmpty(tipoFiltro) ? null : tipoFiltro,
+            estado: string.IsNullOrEmpty(estadoFiltro) ? null : estadoFiltro
+        );
+
+        if (!string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            var texto = textoBusqueda.ToLower();
+            propiedades = propiedades
+                .Where(p => p.Titulo.ToLower().Contains(texto) || p.Direccion.ToLower().Contains(texto))
+                .ToList();
+        }
+    }
+
+    private void LimpiarFiltros()
+    {
+        textoBusqueda = string.Empty;
+        tipoFiltro = string.Empty;
+        estadoFiltro = string.Empty;
+        propiedades = ServicePropiedad.ObtenerTodas();
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/propiedades/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/propiedades/registrar/{id}");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea eliminar esta propiedad?");
+        if (confirmado)
+        {
+            ServicePropiedad.Eliminar(id);
+            propiedades = ServicePropiedad.ObtenerTodas();
+        }
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Disponible" => "bg-success",
+            "Vendida" => "bg-danger",
+            "Reservada" => "bg-warning text-dark",
+            "Alquilada" => "bg-info text-dark",
+            _ => "bg-secondary"
+        };
+    }
 }

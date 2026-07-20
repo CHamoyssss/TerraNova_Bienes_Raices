@@ -1,5 +1,180 @@
-﻿<h3>RegistrarPropiedad</h3>
+﻿@page "/propiedades/registrar"
+@page "/propiedades/registrar/{Id:int}"
+@inject ServicePropiedad ServicePropiedad
+@inject ServiceTrabajador ServiceTrabajador
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Propiedad" : "Nueva Propiedad")</PageTitle>
+
+<div class="dashboard-container">
+    <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Propiedad" : "Registrar Nueva Propiedad")</h2>
+
+    <div class="panel-card shadow-sm p-4">
+        <EditForm Model="propiedad" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">Título</label>
+                    <InputText class="form-control" @bind-Value="propiedad.Titulo" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Tipo</label>
+                    <InputSelect class="form-select" @bind-Value="propiedad.Tipo">
+                        <option value="Casa">Casa</option>
+                        <option value="Departamento">Departamento</option>
+                        <option value="Terreno">Terreno</option>
+                        <option value="Oficina">Oficina</option>
+                        <option value="Local">Local</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label">Dirección</label>
+                    <InputText class="form-control" @bind-Value="propiedad.Direccion" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Zona</label>
+                    <InputText class="form-control" @bind-Value="propiedad.Zona" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Precio (Bs.)</label>
+                    <InputNumber class="form-control" @bind-Value="propiedad.Precio" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Área (m²)</label>
+                    <InputNumber class="form-control" @bind-Value="propiedad.AreaM2" />
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Tipo Operación</label>
+                    <InputSelect class="form-select" @bind-Value="propiedad.TipoOperacion">
+                        <option value="Venta">Venta</option>
+                        <option value="Alquiler">Alquiler</option>
+                    </InputSelect>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Estado</label>
+                    <InputSelect class="form-select" @bind-Value="propiedad.Estado">
+                        <option value="Disponible">Disponible</option>
+                        <option value="Reservada">Reservada</option>
+                        <option value="Vendida">Vendida</option>
+                        <option value="Alquilada">Alquilada</option>
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Habitaciones</label>
+                    <InputNumber class="form-control" @bind-Value="propiedad.Habitaciones" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Baños</label>
+                    <InputNumber class="form-control" @bind-Value="propiedad.Banios" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Garajes</label>
+                    <InputNumber class="form-control" @bind-Value="propiedad.Garajes" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Agente asignado</label>
+                <InputSelect class="form-select" @bind-Value="propiedad.IdTrabajador">
+                    <option value="0">-- Seleccione un agente --</option>
+                    @foreach (var trabajador in trabajadores)
+                    {
+                        <option value="@trabajador.Id">@trabajador.Nombre @trabajador.Apellido (@trabajador.Cargo)</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <InputTextArea class="form-control" rows="3" @bind-Value="propiedad.Descripcion" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">URL de imagen</label>
+                <InputText class="form-control" @bind-Value="propiedad.ImagenUrl" placeholder="https://..." />
+            </div>
+
+            <button type="submit" class="btn btn-success me-2">
+                <i class="bi bi-check-circle"></i> @(esEdicion ? "Actualizar" : "Guardar")
+            </button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                Cancelar
+            </button>
+        </EditForm>
+    </div>
+</div>
 
 @code {
+    [Parameter]
+    public int? Id { get; set; }
 
+    private CPropiedad propiedad = new();
+    private List<CTrabajador> trabajadores = new();
+    private bool esEdicion => Id.HasValue;
+
+    protected override void OnInitialized()
+    {
+        trabajadores = ServiceTrabajador.ObtenerActivos();
+
+        if (esEdicion)
+        {
+            var existente = ServicePropiedad.ObtenerPorId(Id!.Value);
+            if (existente != null)
+            {
+                propiedad = new CPropiedad
+                {
+                    Id = existente.Id,
+                    Titulo = existente.Titulo,
+                    Tipo = existente.Tipo,
+                    Direccion = existente.Direccion,
+                    Zona = existente.Zona,
+                    Precio = existente.Precio,
+                    AreaM2 = existente.AreaM2,
+                    Habitaciones = existente.Habitaciones,
+                    Banios = existente.Banios,
+                    Garajes = existente.Garajes,
+                    Estado = existente.Estado,
+                    TipoOperacion = existente.TipoOperacion,
+                    Descripcion = existente.Descripcion,
+                    ImagenUrl = existente.ImagenUrl,
+                    IdTrabajador = existente.IdTrabajador,
+                    FechaPublicacion = existente.FechaPublicacion
+                };
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/propiedades");
+            }
+        }
+    }
+
+    private void Guardar()
+    {
+        if (esEdicion)
+        {
+            ServicePropiedad.Actualizar(propiedad);
+        }
+        else
+        {
+            ServicePropiedad.Registrar(propiedad);
+        }
+
+        NavigationManager.NavigateTo("/propiedades");
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/propiedades");
+    }
 }
