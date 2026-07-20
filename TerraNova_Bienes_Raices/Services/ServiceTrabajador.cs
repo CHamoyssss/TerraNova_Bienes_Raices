@@ -79,5 +79,23 @@ namespace TerraNova_Bienes_Raices.Services
                 t.Apellido.ToLower().Contains(texto) ||
                 t.Cargo.ToLower().Contains(texto)).ToList();
         }
+
+        // Verifica si la CI ya existe (excluyendo al propio trabajador si se está editando)
+        public bool ExisteCI(string ci, int idExcluir = 0)
+        {
+            return _trabajadores.Any(t => t.CI == ci && t.Id != idExcluir);
+        }
+
+        // Verifica si el Teléfono ya existe
+        public bool ExisteTelefono(string telefono, int idExcluir = 0)
+        {
+            return _trabajadores.Any(t => t.Telefono == telefono && t.Id != idExcluir);
+        }
+
+        // Verifica si el Email ya existe
+        public bool ExisteEmail(string email, int idExcluir = 0)
+        {
+            return _trabajadores.Any(t => t.Email.ToLower() == email.ToLower() && t.Id != idExcluir);
+        }
     }
 }

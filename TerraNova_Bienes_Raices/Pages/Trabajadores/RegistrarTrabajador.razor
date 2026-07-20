@@ -1,5 +1,149 @@
-﻿<h3>RegistrarTrabajador</h3>
+﻿@page "/trabajadores/registrar"
+@page "/trabajadores/registrar/{Id:int}"
+@inject ServiceTrabajador ServiceTrabajador
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Trabajador" : "Nuevo Trabajador")</PageTitle>
+
+<h3>@(esEdicion ? "Editar Trabajador" : "Registrar Nuevo Trabajador")</h3>
+
+<EditForm Model="trabajador" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+    @if (erroresNegocio.Any())
+    {
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach (var error in erroresNegocio)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Nombre</label>
+            <InputText class="form-control" @bind-Value="trabajador.Nombre" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Apellido</label>
+            <InputText class="form-control" @bind-Value="trabajador.Apellido" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Cédula de Identidad</label>
+            <InputText class="form-control" @bind-Value="trabajador.CI" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Cargo</label>
+            <InputSelect class="form-select" @bind-Value="trabajador.Cargo">
+                <option value="Agente">Agente</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Recepcionista">Recepcionista</option>
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Teléfono</label>
+            <InputText class="form-control" @bind-Value="trabajador.Telefono" />
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="trabajador.Email" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Porcentaje de Comisión</label>
+            <InputNumber class="form-control" @bind-Value="trabajador.PorcentajeComision" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success me-2">
+        @(esEdicion ? "Actualizar" : "Guardar")
+    </button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+        Cancelar
+    </button>
+</EditForm>
 
 @code {
+    [Parameter]
+    public int? Id { get; set; }
 
+    private CTrabajador trabajador = new();
+    private bool esEdicion => Id.HasValue;
+    private List<string> erroresNegocio = new();
+
+    protected override void OnInitialized()
+    {
+        if (esEdicion)
+        {
+            var existente = ServiceTrabajador.ObtenerPorId(Id!.Value);
+            if (existente != null)
+            {
+                trabajador = new CTrabajador
+                {
+                    Id = existente.Id,
+                    Nombre = existente.Nombre,
+                    Apellido = existente.Apellido,
+                    CI = existente.CI,
+                    Cargo = existente.Cargo,
+                    Telefono = existente.Telefono,
+                    Email = existente.Email,
+                    PorcentajeComision = existente.PorcentajeComision,
+                    FechaContratacion = existente.FechaContratacion,
+                    Activo = existente.Activo
+                };
+            }
+            else
+            {
+                NavigationManager.NavigateTo("/trabajadores");
+            }
+        }
+    }
+
+    private void Guardar()
+    {
+        erroresNegocio.Clear();
+
+        int idParaExcluir = esEdicion ? trabajador.Id : 0;
+
+        if (ServiceTrabajador.ExisteCI(trabajador.CI, idParaExcluir))
+            erroresNegocio.Add("Ya existe un trabajador registrado con esa CI.");
+
+        if (ServiceTrabajador.ExisteTelefono(trabajador.Telefono, idParaExcluir))
+            erroresNegocio.Add("Ya existe un trabajador registrado con ese teléfono.");
+
+        if (ServiceTrabajador.ExisteEmail(trabajador.Email, idParaExcluir))
+            erroresNegocio.Add("Ya existe un trabajador registrado con ese email.");
+
+        if (erroresNegocio.Any())
+            return; // no guarda, se muestran los errores en pantalla
+
+        if (esEdicion)
+        {
+            ServiceTrabajador.Actualizar(trabajador);
+        }
+        else
+        {
+            ServiceTrabajador.Registrar(trabajador);
+        }
+
+        NavigationManager.NavigateTo("/trabajadores");
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/trabajadores");
+    }
 }
