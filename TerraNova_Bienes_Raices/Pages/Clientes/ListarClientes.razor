@@ -1,5 +1,115 @@
-﻿<h3>ListarClientes</h3>
+﻿@page "/clientes"
+@inject ServiceCliente ServiceCliente
+@inject ServiceSesion ServiceSesion
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Clientes</PageTitle>
+
+<h3>Gestión de Clientes</h3>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <input type="text"
+           class="form-control w-50"
+           placeholder="Buscar por nombre, apellido o CI..."
+           @bind="textoBusqueda"
+           @bind:event="oninput"
+           @onkeyup="Buscar" />
+
+    <button class="btn btn-primary" @onclick="IrARegistrar">
+        + Nuevo Cliente
+    </button>
+</div>
+
+@if (clientes == null)
+{
+    <p><em>Cargando...</em></p>
+}
+else if (!clientes.Any())
+{
+    <div class="alert alert-info">No se encontraron clientes.</div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>CI</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Tipo</th>
+                <th>Fecha Registro</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cliente in clientes)
+            {
+                <tr>
+                    <td>@cliente.Nombre</td>
+                    <td>@cliente.Apellido</td>
+                    <td>@cliente.CI</td>
+                    <td>@cliente.Telefono</td>
+                    <td>@cliente.Email</td>
+                    <td>@cliente.TipoCliente</td>
+                    <td>@cliente.FechaRegistro.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(cliente.Id)">
+                            Editar
+                        </button>
+
+                        @if (ServiceSesion.EsAdmin)
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(cliente.Id)">
+                                Eliminar
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
+    private List<CCliente> clientes = new();
+    private string textoBusqueda = string.Empty;
 
+    protected override void OnInitialized()
+    {
+        clientes = ServiceCliente.ObtenerTodos();
+    }
+
+    private void Buscar()
+    {
+        clientes = string.IsNullOrWhiteSpace(textoBusqueda)
+            ? ServiceCliente.ObtenerTodos()
+            : ServiceCliente.Buscar(textoBusqueda);
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/clientes/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/clientes/registrar/{id}");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        // Doble seguro: aunque el botón esté oculto para Agente, si intentara
+        // llamar este método igual se bloquea la acción.
+        if (!ServiceSesion.EsAdmin) return;
+
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea eliminar este cliente?");
+        if (confirmado)
+        {
+            ServiceCliente.Eliminar(id);
+            clientes = ServiceCliente.ObtenerTodos();
+        }
+    }
 }
