@@ -56,9 +56,13 @@ else
                     <td>@cliente.TipoCliente</td>
                     <td>@cliente.FechaRegistro.ToString("dd/MM/yyyy")</td>
                     <td>
-                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(cliente.Id)">
-                            Editar
-                        </button>
+                        
+
+                        @if (ServiceSesion.EsAdmin)
+                        {
+                            <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(cliente.Id)">
+                                Editar
+                            </button>
                             <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(cliente.Id)">
                                 Eliminar
                             </button>
