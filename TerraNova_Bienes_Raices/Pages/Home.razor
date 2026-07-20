@@ -1,7 +1,221 @@
 ﻿@page "/"
+@using TerraNova_Bienes_Raices.Models
+@using TerraNova_Bienes_Raices.Services
+@inject DashboardService DashboardService
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio - TerraNova Bienes Raíces</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (Dashboard is null)
+{
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard-container">
 
-Welcome to your new app.
+        <!-- ENCABEZADO -->
+        <div class="dashboard-header mb-4">
+            <h2 class="fw-bold mb-1">Bienvenido </h2>
+            <p class="text-muted mb-0">Sistema TerraNova Bienes Raíces</p>
+            <p class="text-muted small">@FechaActual.ToString("dddd, dd MMMM yyyy")</p>
+        </div>
+
+        <!-- TARJETAS DE ESTADÍSTICAS -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card shadow-sm">
+                    <div class="stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-house-door-fill"></i>
+                    </div>
+                    <div>
+                        <p class="stat-title">Propiedades</p>
+                        <h3 class="stat-value">@Dashboard.TotalPropiedades</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card shadow-sm">
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div>
+                        <p class="stat-title">Clientes</p>
+                        <h3 class="stat-value">@Dashboard.TotalClientes</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card shadow-sm">
+                    <div class="stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div>
+                        <p class="stat-title">Ventas</p>
+                        <h3 class="stat-value">@Dashboard.TotalVentas</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <div class="stat-card shadow-sm">
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-person-badge-fill"></i>
+                    </div>
+                    <div>
+                        <p class="stat-title">Trabajadores</p>
+                        <h3 class="stat-value">@Dashboard.TotalTrabajadores</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <!-- TABLA DE ÚLTIMAS PROPIEDADES -->
+            <div class="col-lg-8">
+                <div class="panel-card shadow-sm h-100">
+                    <div class="panel-header">
+                        <h5 class="mb-0">Últimas propiedades registradas</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Título</th>
+                                    <th>Precio</th>
+                                    <th>Estado</th>
+                                    <th>Dirección</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Dashboard.UltimasPropiedades.Any())
+                                {
+                                    @foreach (var propiedad in Dashboard.UltimasPropiedades)
+                                    {
+                                        <tr>
+                                            <td>@propiedad.Id</td>
+                                            <td>@propiedad.Titulo</td>
+                                            <td>@propiedad.Precio.ToString("C0")</td>
+                                            <td>
+                                                <span class="badge @ObtenerClaseEstado(propiedad.Estado)">@propiedad.Estado</span>
+                                            </td>
+                                            <td>@propiedad.Direccion</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            No hay propiedades registradas todavía.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTIVIDAD RECIENTE -->
+            <div class="col-lg-4">
+                <div class="panel-card shadow-sm h-100">
+                    <div class="panel-header">
+                        <h5 class="mb-0">Actividad reciente</h5>
+                    </div>
+                    <ul class="activity-list">
+                        @if (Dashboard.ActividadReciente.Any())
+                        {
+                            @foreach (var actividad in Dashboard.ActividadReciente)
+                            {
+                                <li>
+                                    <i class="bi @actividad.Icono"></i>
+                                    <div>
+                                        <p class="mb-0">@actividad.Descripcion</p>
+                                        <small class="text-muted">@actividad.Fecha.ToString("dd MMM, HH:mm")</small>
+                                    </div>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            <li class="text-muted text-center py-3">No hay actividad reciente.</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCESOS RÁPIDOS -->
+        <div class="panel-card shadow-sm mt-4">
+            <div class="panel-header">
+                <h5 class="mb-0">Accesos rápidos</h5>
+            </div>
+            <div class="row g-3 p-3">
+                <div class="col-md-2 col-sm-6">
+                    <button class="btn-quick-access w-100 h-100" @onclick='() => Navigation.NavigateTo("/propiedades/registrar")'>
+                        <i class="bi bi-house-add"></i>
+                        <span class="d-block mt-1">Registrar Propiedad</span>
+                    </button>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <button class="btn-quick-access w-100 h-100" @onclick='() => Navigation.NavigateTo("/clientes/registrar")'>
+                        <i class="bi bi-person-plus"></i>
+                        <span class="d-block mt-1">Registrar Cliente</span>
+                    </button>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <button class="btn-quick-access w-100 h-100" @onclick='() => Navigation.NavigateTo("/ventas/registrar")'>
+                        <i class="bi bi-cart-plus"></i>
+                        <span class="d-block mt-1">Registrar Venta</span>
+                    </button>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <button class="btn-quick-access w-100 h-100" @onclick='() => Navigation.NavigateTo("/trabajadores/registrar")'>
+                        <i class="bi bi-person-badge"></i>
+                        <span class="d-block mt-1">Registrar Trabajador</span>
+                    </button>
+                </div>
+                <div class="col-md-2 col-sm-6">
+                    <button class="btn-quick-access w-100 h-100" @onclick='() => Navigation.NavigateTo("/visitas/registrar")'>
+                        <i class="bi bi-calendar-check"></i>
+                        <span class="d-block mt-1">Programar Visita</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    private DashboardVM? Dashboard;
+    private DateTime FechaActual = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Si en el futuro DashboardService se vuelve asíncrono, cambia esto por:
+        // Dashboard = await DashboardService.ObtenerDashboardAsync();
+        Dashboard = DashboardService.ObtenerDashboard();
+        await Task.CompletedTask;
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Disponible" => "bg-success",
+            "Vendida" => "bg-danger",
+            "Reservada" => "bg-warning text-dark",
+            "Alquilada" => "bg-info text-dark",
+            _ => "bg-secondary"
+        };
+    }
+}
