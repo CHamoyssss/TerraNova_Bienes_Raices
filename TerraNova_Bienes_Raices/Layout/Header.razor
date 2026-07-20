@@ -1,0 +1,67 @@
+﻿@inject NavigationManager Navigation
+
+<header class="app-header">
+    <div class="header-left">
+        <button class="icon-btn d-lg-none" title="Menú" @onclick="ToggleSidebar">
+            <i class="bi bi-list"></i>
+        </button>
+        <h5 class="page-title">@ObtenerTitulo()</h5>
+    </div>
+
+    <div class="header-right">
+        <button class="icon-btn" title="Notificaciones">
+            <i class="bi bi-bell"></i>
+        </button>
+
+        <div class="user-menu" @onclick="ToggleMenu">
+            <div class="avatar">A</div>
+            <div class="user-info d-none d-md-block">
+                <span class="user-name">Admin</span>
+                <span class="user-role">Administrador</span>
+            </div>
+            <i class="bi bi-chevron-down small-icon"></i>
+
+            @if (MenuAbierto)
+            {
+                <div class="dropdown-menu-custom">
+                    <a href="/perfil"><i class="bi bi-person"></i> Mi perfil</a>
+                    <a href="/configuracion"><i class="bi bi-gear"></i> Configuración</a>
+                    <hr />
+                    <a href="/login" class="text-danger"><i class="bi bi-box-arrow-right"></i> Cerrar sesión</a>
+                </div>
+            }
+        </div>
+    </div>
+</header>
+
+@code {
+    private bool MenuAbierto = false;
+
+    [Parameter]
+    public EventCallback OnToggleSidebar { get; set; }
+
+    private void ToggleMenu()
+    {
+        MenuAbierto = !MenuAbierto;
+    }
+
+    private void ToggleSidebar()
+    {
+        OnToggleSidebar.InvokeAsync();
+    }
+
+    private string ObtenerTitulo()
+    {
+        var ruta = new Uri(Navigation.Uri).AbsolutePath;
+
+        return ruta switch
+        {
+            "/" => "Inicio",
+            var r when r.StartsWith("/propiedades") => "Propiedades",
+            var r when r.StartsWith("/clientes") => "Clientes",
+            var r when r.StartsWith("/ventas") => "Ventas",
+            var r when r.StartsWith("/trabajadores") => "Trabajadores",
+            _ => "TerraNova"
+        };
+    }
+}
