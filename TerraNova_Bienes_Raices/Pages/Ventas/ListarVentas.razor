@@ -1,5 +1,143 @@
-﻿<h3>ListarVentas</h3>
+﻿@page "/ventas"
+@using TerraNova_Bienes_Raices.Models
+@inject NavigationManager Navigation
+
+<PageTitle>Listado de Ventas - TerraNova Bienes Raíces</PageTitle>
+
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Ventas Registradas</h2>
+            <p class="text-muted mb-0">Gestión e historial de transacciones realizadas</p>
+        </div>
+        <button class="btn btn-primary" @onclick='() => Navigation.NavigateTo("/ventas/registrar")'>
+            <i class="bi bi-cart-plus me-1"></i> Nueva Venta
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th># ID</th>
+                            <th>Fecha</th>
+                            <th>Forma de Pago</th>
+                            <th>Monto</th>
+                            <th>Comisión</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ventas is null)
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </td>
+                            </tr>
+                        }
+                        else if (!ventas.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    No hay ventas registradas aún.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in ventas)
+                            {
+                                <tr>
+                                    <td class="fw-bold">#@item.Id</td>
+                                    <td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @item.FormaPago
+                                        </span>
+                                    </td>
+                                    <td class="fw-bold text-success">
+                                        $@item.Monto.ToString("N2")
+                                    </td>
+                                    <td class="text-muted">
+                                        $@item.ComisionGenerada.ToString("N2")
+                                    </td>
+                                    <td>
+                                        <span class="badge @ObtenerClaseEstado(item.Estado)">
+                                            @item.Estado
+                                        </span>
+                                    </td>
+                                    <td class="text-truncate" style="max-width: 150px;" title="@item.Observaciones">
+                                        @(string.IsNullOrEmpty(item.Observaciones) ? "-" : item.Observaciones)
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" title="Anular/Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
+    private List<CVenta>? ventas;
 
+    protected override async Task OnInitializedAsync()
+    {
+        ventas = new List<CVenta>
+        {
+            new CVenta
+            {
+                Id = 1,
+                IdCliente = 1,
+                IdPropiedad = 101,
+                IdTrabajador = 1,
+                Fecha = DateTime.Now.AddDays(-3),
+                Monto = 145000.00m,
+                ComisionGenerada = 4350.00m,
+                FormaPago = "Contado",
+                Estado = "Completada",
+                Observaciones = "Pago realizado mediante transferencia bancaria directa."
+            },
+            new CVenta
+            {
+                Id = 2,
+                IdCliente = 2,
+                IdPropiedad = 102,
+                IdTrabajador = 1,
+                Fecha = DateTime.Now.AddDays(-1),
+                Monto = 92000.00m,
+                ComisionGenerada = 2760.00m,
+                FormaPago = "Crédito",
+                Estado = "En proceso",
+                Observaciones = "Pendiente aprobación del crédito hipotecario."
+            }
+        };
+
+        await Task.CompletedTask;
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Completada" => "bg-success",
+            "En proceso" => "bg-warning text-dark",
+            "Cancelada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
 }

@@ -1,5 +1,138 @@
-﻿<h3>RegistrarVenta</h3>
+﻿@page "/ventas/registrar"
+@using TerraNova_Bienes_Raices.Models
+@inject NavigationManager Navigation
+
+<PageTitle>Registrar Venta - TerraNova Bienes Raíces</PageTitle>
+
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Registrar Nueva Venta</h2>
+            <p class="text-muted mb-0">Ingrese la información general y la transacción del inmueble</p>
+        </div>
+        <a href="/ventas/listar" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Volver al listado
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <EditForm Model="@venta" OnValidSubmit="@GuardarVenta">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger mb-3" />
+
+                <h5 class="fw-bold text-primary mb-3"><i class="bi bi-diagram-3 me-2"></i>Información General</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Cliente</label>
+                        <InputSelect class="form-select" @bind-Value="venta.IdCliente">
+                            <option value="0">-- Seleccione un Cliente --</option>
+                            @foreach (var c in listaClientes)
+                            {
+                                <option value="@c.Id">@c.Nombre</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Propiedad</label>
+                        <InputSelect class="form-select" @bind-Value="venta.IdPropiedad">
+                            <option value="0">-- Seleccione una Propiedad --</option>
+                            @foreach (var p in listaPropiedades)
+                            {
+                                <option value="@p.Id">@p.Titulo</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Trabajador / Agente</label>
+                        <InputSelect class="form-select" @bind-Value="venta.IdTrabajador">
+                            <option value="0">-- Seleccione un Agente --</option>
+                            @foreach (var t in listaTrabajadores)
+                            {
+                                <option value="@t.Id">@t.Nombre</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <h5 class="fw-bold text-primary mb-3"><i class="bi bi-cash-stack me-2"></i>Detalles de la Transacción</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Fecha de Venta</label>
+                        <InputDate class="form-control" @bind-Value="venta.Fecha" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Monto Total ($)</label>
+                        <InputNumber class="form-control" @bind-Value="venta.Monto" placeholder="0.00" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Comisión Generada ($)</label>
+                        <InputNumber class="form-control" @bind-Value="venta.ComisionGenerada" placeholder="0.00" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Forma de Pago</label>
+                        <InputSelect class="form-select" @bind-Value="venta.FormaPago">
+                            <option value="Contado">Contado</option>
+                            <option value="Crédito">Crédito</option>
+                            <option value="Financiado">Financiado</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Estado de la Venta</label>
+                        <InputSelect class="form-select" @bind-Value="venta.Estado">
+                            <option value="Completada">Completada</option>
+                            <option value="En proceso">En proceso</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <InputTextArea class="form-control" @bind-Value="venta.Observaciones" rows="2" placeholder="Notas adicionales sobre el proceso..." />
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end mt-4">
+                    <a href="/ventas/listar" class="btn btn-secondary px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-check-lg me-1"></i> Guardar Venta
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
 
 @code {
+    private CVenta venta = new CVenta();
 
+    private List<dynamic> listaClientes = new()
+    {
+        new { Id = 1, Nombre = "Juan Pérez" },
+        new { Id = 2, Nombre = "María López" }
+    };
+
+    private List<dynamic> listaPropiedades = new()
+    {
+        new { Id = 101, Titulo = "Casa Moderna en Equipetrol" },
+        new { Id = 102, Titulo = "Departamento 2 Dormitorios Urubó" }
+    };
+
+    private List<dynamic> listaTrabajadores = new()
+    {
+        new { Id = 1, Nombre = "Carlos Agente" }
+    };
+
+    private void GuardarVenta()
+    {
+        Navigation.NavigateTo("/ventas/listar");
+    }
 }
