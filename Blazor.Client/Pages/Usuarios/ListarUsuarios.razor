@@ -1,0 +1,154 @@
+﻿@page "/usuarios"
+@inject ServicioUsuarios ServicioUsuarios
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Usuarios</PageTitle>
+
+<div class="dashboard-container">
+
+    @if (!ServicioAutenticacion.EsAdmin)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-shield-lock"></i> No tienes permisos para acceder a esta sección. Solo el Administrador puede gestionar usuarios.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Usuarios del Sistema</h2>
+                <p class="text-muted mb-0">Gestión de accesos y roles</p>
+            </div>
+            <button class="btn btn-primary" @onclick="IrARegistrar">
+                <i class="bi bi-person-plus"></i> Nuevo Usuario
+            </button>
+        </div>
+
+        @if (cargando)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else if (mensajeError != null)
+        {
+            <div class="alert alert-danger">@mensajeError</div>
+        }
+        else if (!usuarios.Any())
+        {
+            <div class="alert alert-info">No hay usuarios registrados.</div>
+        }
+        else
+        {
+            <div class="panel-card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Nombre de Usuario</th>
+                                <th>Rol</th>
+                                <th>Trabajador Vinculado</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var usuario in usuarios)
+                            {
+                                <tr>
+                                    <td>@usuario.NombreUsuario</td>
+                                    <td>
+                                        <span class="badge @(usuario.Rol == "Admin" ? "bg-danger" : "bg-primary")">@usuario.Rol</span>
+                                    </td>
+                                    <td>@usuario.IdTrabajadorNavigation?.Nombre @usuario.IdTrabajadorNavigation?.Apellido</td>
+                                    <td>
+                                        @if (usuario.Activo)
+                                        {
+                                            <span class="badge bg-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(usuario.Id)">
+                                            <i class="bi bi-pencil"></i>Modificar
+                                        </button>
+                                        @if (usuario.Activo)
+                                        {
+                                            <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarBaja(usuario.Id)">
+                                                <i class="bi bi-person-dash"></i>Eliminar
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<UsuarioDTO> usuarios = new();
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!ServicioAutenticacion.EsAdmin)
+        {
+            cargando = false;
+            return;
+        }
+
+        try
+        {
+            usuarios = await ServicioUsuarios.Lista();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de usuarios: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/usuarios/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/usuarios/registrar/{id}");
+    }
+
+    private async Task ConfirmarBaja(int id)
+    {
+        if (!ServicioAutenticacion.EsAdmin) return;
+
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Dar de baja a este usuario?");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioUsuarios.Eliminar(id);
+                usuarios = await ServicioUsuarios.Lista();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo dar de baja: " + ex.Message;
+            }
+        }
+    }
+}

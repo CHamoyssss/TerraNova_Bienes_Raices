@@ -1,0 +1,174 @@
+﻿@page "/trabajadores"
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Trabajadores</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Trabajadores</h2>
+            <p class="text-muted mb-0">Gestión de agentes y personal</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-person-badge"></i> Nuevo Trabajador
+        </button>
+    </div>
+
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <input type="text" class="form-control w-50"
+               placeholder="Buscar por nombre, apellido o cargo..."
+               @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!trabajadoresFiltrados.Any())
+    {
+        <div class="alert alert-info">No se encontraron trabajadores.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>CI</th>
+                            <th>Cargo</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>% Comisión</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var trabajador in trabajadoresFiltrados)
+                        {
+                            <tr>
+                                <td>@trabajador.Nombre</td>
+                                <td>@trabajador.Apellido</td>
+                                <td>@trabajador.Ci</td>
+                                <td>@trabajador.Cargo</td>
+                                <td>@trabajador.Telefono</td>
+                                <td>@trabajador.Email</td>
+                                <td>@trabajador.PorcentajeComision%</td>
+                                <td>
+                                    @if (trabajador.Activo)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactivo</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(trabajador.Id)">
+                                        <i class="bi bi-pencil"></i>Modificar
+                                    </button>
+                                    @if (trabajador.Activo)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarBaja(trabajador.Id)">
+                                            <i class="bi bi-person-dash"></i>Eliminar
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TrabajadorDTO> trabajadores = new();
+    private List<TrabajadorDTO> trabajadoresFiltrados = new();
+    private string textoBusqueda = string.Empty;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTrabajadores();
+    }
+
+    private async Task CargarTrabajadores()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            trabajadores = await ServicioTrabajadores.Lista();
+            trabajadoresFiltrados = trabajadores;
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de trabajadores: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Filtrar()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            trabajadoresFiltrados = trabajadores;
+        }
+        else
+        {
+            var texto = textoBusqueda.ToLower();
+            trabajadoresFiltrados = trabajadores.Where(t =>
+                t.Nombre.ToLower().Contains(texto) ||
+                t.Apellido.ToLower().Contains(texto) ||
+                t.Cargo.ToLower().Contains(texto)).ToList();
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/trabajadores/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/trabajadores/registrar/{id}");
+    }
+
+    private async Task ConfirmarBaja(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea dar de baja a este trabajador?");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioTrabajadores.Eliminar(id);
+                await CargarTrabajadores();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo dar de baja: " + ex.Message;
+            }
+        }
+    }
+}

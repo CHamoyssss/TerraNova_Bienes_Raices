@@ -1,0 +1,177 @@
+﻿@page "/visitas/registrar"
+@page "/visitas/registrar/{Id:int}"
+@inject ServicioVisitas ServicioVisitas
+@inject ServicioClientes ServicioClientes
+@inject ServicioPropiedades ServicioPropiedades
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Visita" : "Programar Visita")</PageTitle>
+
+<div class="dashboard-container">
+    <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Visita" : "Programar Nueva Visita")</h2>
+
+    <div class="panel-card shadow-sm p-4">
+
+        @if (cargando)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="visita" OnValidSubmit="Guardar">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                @if (mensajeError != null)
+                {
+                    <div class="alert alert-danger">@mensajeError</div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cliente</label>
+                        <InputSelect class="form-select" @bind-Value="visita.IdCliente">
+                            <option value="0">-- Seleccione un cliente --</option>
+                            @foreach (var cliente in clientes)
+                            {
+                                <option value="@cliente.Id">@cliente.Nombre @cliente.Apellido - CI: @cliente.Ci</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Propiedad</label>
+                        <InputSelect class="form-select" @bind-Value="visita.IdPropiedad">
+                            <option value="0">-- Seleccione una propiedad --</option>
+                            @foreach (var prop in propiedades)
+                            {
+                                <option value="@prop.Id">@prop.Titulo - @prop.Zona</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Agente que atiende</label>
+                        <InputSelect class="form-select" @bind-Value="visita.IdTrabajador">
+                            <option value="0">-- Seleccione un agente --</option>
+                            @foreach (var trabajador in trabajadores)
+                            {
+                                <option value="@trabajador.Id">@trabajador.Nombre @trabajador.Apellido</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fecha y Hora de Visita</label>
+                        <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="visita.FechaVisita" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Estado</label>
+                    <InputSelect class="form-select" @bind-Value="visita.Estado">
+                        <option value="Programada">Programada</option>
+                        <option value="Realizada">Realizada</option>
+                        <option value="Cancelada">Cancelada</option>
+                    </InputSelect>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Comentarios</label>
+                    <InputTextArea class="form-control" rows="2" @bind-Value="visita.Comentarios" />
+                </div>
+
+                <button type="submit" class="btn btn-success me-2" disabled="@guardando">
+                    <i class="bi bi-check-circle"></i>
+                    @(guardando ? "Guardando..." : (esEdicion ? "Actualizar" : "Programar Visita"))
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                    Cancelar
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private VisitaDTO visita = new() { FechaVisita = DateTime.Now, Estado = "Programada" };
+    private List<ClienteDTO> clientes = new();
+    private List<PropiedadDTO> propiedades = new();
+    private List<TrabajadorDTO> trabajadores = new();
+    private bool esEdicion => Id.HasValue;
+    private bool cargando = true;
+    private bool guardando = false;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clientes = await ServicioClientes.Lista();
+            propiedades = await ServicioPropiedades.Lista();
+            trabajadores = await ServicioTrabajadores.Activos();
+
+            if (esEdicion)
+            {
+                visita = await ServicioVisitas.Buscar(Id!.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudieron cargar los datos: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Guardar()
+    {
+        mensajeError = null;
+
+        if (visita.IdCliente == 0 || visita.IdPropiedad == 0 || visita.IdTrabajador == 0)
+        {
+            mensajeError = "Debe seleccionar Cliente, Propiedad y Agente antes de guardar.";
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            if (esEdicion)
+            {
+                await ServicioVisitas.Modificar(visita);
+            }
+            else
+            {
+                await ServicioVisitas.Guardar(visita);
+            }
+
+            NavigationManager.NavigateTo("/visitas");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo guardar: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/visitas");
+    }
+}   

@@ -1,0 +1,175 @@
+﻿@page "/usuarios/registrar"
+@page "/usuarios/registrar/{Id:int}"
+@inject ServicioUsuarios ServicioUsuarios
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Usuario" : "Nuevo Usuario")</PageTitle>
+
+<div class="dashboard-container">
+
+    @if (!ServicioAutenticacion.EsAdmin)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-shield-lock"></i> No tienes permisos para acceder a esta sección.
+        </div>
+    }
+    else
+    {
+        <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Usuario" : "Registrar Nuevo Usuario")</h2>
+
+        <div class="panel-card shadow-sm p-4">
+
+            @if (cargando)
+            {
+                <div class="text-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="usuario" OnValidSubmit="Guardar">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" />
+
+                    @if (mensajeError != null)
+                    {
+                        <div class="alert alert-danger">@mensajeError</div>
+                    }
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre de Usuario</label>
+                            <InputText class="form-control" @bind-Value="usuario.NombreUsuario" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rol</label>
+                            <InputSelect class="form-select" @bind-Value="usuario.Rol">
+                                <option value="Agente">Agente</option>
+                                <option value="Admin">Admin</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+
+                    @if (!esEdicion)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña</label>
+                            <InputText type="password" class="form-control" @bind-Value="contrasenaPlano" />
+                            <small class="text-muted">Se guardará de forma segura (hash), no en texto plano.</small>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Trabajador Vinculado</label>
+                        <InputSelect class="form-select" @bind-Value="usuario.IdTrabajador">
+                            <option value="0">-- Ninguno --</option>
+                            @foreach (var trabajador in trabajadores)
+                            {
+                                <option value="@trabajador.Id">@trabajador.Nombre @trabajador.Apellido (@trabajador.Cargo)</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        <InputCheckbox class="form-check-input" id="chkActivo" @bind-Value="usuario.Activo" />
+                        <label class="form-check-label" for="chkActivo">Activo</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success me-2" disabled="@guardando">
+                        <i class="bi bi-check-circle"></i>
+                        @(guardando ? "Guardando..." : (esEdicion ? "Actualizar" : "Guardar"))
+                    </button>
+                    <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                        Cancelar
+                    </button>
+                </EditForm>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private UsuarioDTO usuario = new() { Rol = "Agente", Activo = true };
+    private List<TrabajadorDTO> trabajadores = new();
+    private string contrasenaPlano = string.Empty;
+    private bool esEdicion => Id.HasValue;
+    private bool cargando = true;
+    private bool guardando = false;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!ServicioAutenticacion.EsAdmin)
+        {
+            cargando = false;
+            return;
+        }
+
+        try
+        {
+            trabajadores = await ServicioTrabajadores.Activos();
+
+            if (esEdicion)
+            {
+                usuario = await ServicioUsuarios.Buscar(Id!.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudieron cargar los datos: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task Guardar()
+    {
+        if (!ServicioAutenticacion.EsAdmin) return;
+
+        mensajeError = null;
+
+        if (!esEdicion && string.IsNullOrWhiteSpace(contrasenaPlano))
+        {
+            mensajeError = "Debe ingresar una contraseña.";
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            if (!esEdicion)
+            {
+                usuario.ContraseñaHash = contrasenaPlano; // el Server se encarga de hashearlo con BCrypt antes de guardar
+                await ServicioUsuarios.Guardar(usuario);
+            }
+            else
+            {
+                await ServicioUsuarios.Modificar(usuario);
+            }
+
+            NavigationManager.NavigateTo("/usuarios");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo guardar: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/usuarios");
+    }
+}

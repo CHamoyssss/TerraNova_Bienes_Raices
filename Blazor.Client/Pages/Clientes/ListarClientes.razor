@@ -1,0 +1,160 @@
+﻿@page "/clientes"
+@inject ServicioClientes ServicioClientes
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Clientes</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Clientes</h2>
+            <p class="text-muted mb-0">Gestión de clientes registrados</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-person-plus"></i> Nuevo Cliente
+        </button>
+    </div>
+
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <input type="text" class="form-control w-50"
+               placeholder="Buscar por nombre, apellido o CI..."
+               @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!clientesFiltrados.Any())
+    {
+        <div class="alert alert-info">No se encontraron clientes.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>CI</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Fecha Registro</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cliente in clientesFiltrados)
+                        {
+                            <tr>
+                                <td>@cliente.Nombre</td>
+                                <td>@cliente.Apellido</td>
+                                <td>@cliente.Ci</td>
+                                <td>@cliente.Telefono</td>
+                                <td>@cliente.Email</td>
+                                <td>@cliente.TipoCliente</td>
+                                <td>@cliente.FechaRegistro.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(cliente.Id)">
+                                        <i class="bi bi-pencil"></i>Modificar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(cliente.Id)">Eliminar
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<ClienteDTO> clientes = new();
+    private List<ClienteDTO> clientesFiltrados = new();
+    private string textoBusqueda = string.Empty;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarClientes();
+    }
+
+    private async Task CargarClientes()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            clientes = await ServicioClientes.Lista();
+            clientesFiltrados = clientes;
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de clientes: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Filtrar()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            clientesFiltrados = clientes;
+        }
+        else
+        {
+            var texto = textoBusqueda.ToLower();
+            clientesFiltrados = clientes.Where(c =>
+                c.Nombre.ToLower().Contains(texto) ||
+                c.Apellido.ToLower().Contains(texto) ||
+                c.Ci.ToLower().Contains(texto)).ToList();
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/clientes/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/clientes/registrar/{id}");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea eliminar este cliente?");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioClientes.Eliminar(id);
+                await CargarClientes();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo eliminar: " + ex.Message;
+            }
+        }
+    }
+}

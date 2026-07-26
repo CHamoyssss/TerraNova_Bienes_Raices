@@ -1,0 +1,146 @@
+﻿@page "/visitas"
+@inject ServicioVisitas ServicioVisitas
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Visitas</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Visitas</h2>
+            <p class="text-muted mb-0">Agenda de visitas a propiedades</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-calendar-plus"></i> Programar Visita
+        </button>
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!visitas.Any())
+    {
+        <div class="alert alert-info">No hay visitas programadas.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha y Hora</th>
+                            <th>Cliente</th>
+                            <th>Propiedad</th>
+                            <th>Agente</th>
+                            <th>Estado</th>
+                            <th>Comentarios</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var visita in visitas)
+                        {
+                            <tr>
+                                <td>@visita.FechaVisita.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@visita.IdClienteNavigation?.Nombre @visita.IdClienteNavigation?.Apellido</td>
+                                <td>@visita.IdPropiedadNavigation?.Titulo</td>
+                                <td>@visita.IdTrabajadorNavigation?.Nombre @visita.IdTrabajadorNavigation?.Apellido</td>
+                                <td>
+                                    <span class="badge @ObtenerClaseEstado(visita.Estado)">@visita.Estado</span>
+                                </td>
+                                <td>@visita.Comentarios</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(visita.Id)">
+                                        <i class="bi bi-pencil"></i>Modificar
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(visita.Id)">
+                                        <i class="bi bi-trash"></i>Eliminar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<VisitaDTO> visitas = new();
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarVisitas();
+    }
+
+    private async Task CargarVisitas()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            visitas = await ServicioVisitas.Lista();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de visitas: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/visitas/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/visitas/registrar/{id}");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea eliminar esta visita?");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioVisitas.Eliminar(id);
+                await CargarVisitas();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo eliminar: " + ex.Message;
+            }
+        }
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Programada" => "bg-warning text-dark",
+            "Realizada" => "bg-success",
+            "Cancelada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

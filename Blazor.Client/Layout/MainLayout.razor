@@ -1,0 +1,101 @@
+﻿@inherits LayoutComponentBase
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject NavigationManager NavigationManager
+
+@if (verificando)
+{
+    <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else if (!ServicioAutenticacion.EstaLogueado)
+{
+    <!-- Mientras redirige, no muestra nada -->
+}
+else
+{
+    <div class="page">
+        <div class="sidebar">
+            <nav class="flex-column">
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <i class="bi bi-house"></i> Inicio
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="clientes">
+                        <i class="bi bi-people"></i> Clientes
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="propiedades">
+                        <i class="bi bi-house-door"></i> Propiedades
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trabajadores">
+                        <i class="bi bi-person-badge"></i> Trabajadores
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ventas">
+                        <i class="bi bi-cash-coin"></i> Ventas
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="visitas">
+                        <i class="bi bi-calendar-check"></i> Visitas
+                    </NavLink>
+                </div>
+                @if (ServicioAutenticacion.EsAdmin)
+                {
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="usuarios">
+                            <i class="bi bi-people-fill"></i> Usuarios
+                        </NavLink>
+                    </div>
+                }
+            </nav>
+
+            <div class="px-3 mt-4">
+                <p class="text-white-50 small mb-1">
+                    Conectado como: <strong>@ServicioAutenticacion.UsuarioActual?.NombreUsuario</strong>
+                </p>
+                <p class="text-white-50 small mb-2">Rol: @ServicioAutenticacion.UsuarioActual?.Rol</p>
+                <button class="btn btn-sm btn-outline-light w-100" @onclick="CerrarSesion">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                </button>
+            </div>
+        </div>
+
+        <main>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+}
+
+@code {
+    private bool verificando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Aseguramos que la sesión se cargue desde localStorage antes de verificar
+        await ServicioAutenticacion.InicializarAsync();
+        verificando = false;
+
+        if (!ServicioAutenticacion.EstaLogueado)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private async Task CerrarSesion()
+    {
+        await ServicioAutenticacion.CerrarSesion();
+        NavigationManager.NavigateTo("/login", forceLoad: true);
+    }
+}

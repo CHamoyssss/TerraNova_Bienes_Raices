@@ -1,0 +1,178 @@
+﻿@page "/clientes/registrar"
+@page "/clientes/registrar/{Id:int}"
+@inject ServicioClientes ServicioClientes
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(esEdicion ? "Editar Cliente" : "Nuevo Cliente")</PageTitle>
+
+<div class="dashboard-container">
+    <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Cliente" : "Registrar Nuevo Cliente")</h2>
+
+    <div class="panel-card shadow-sm p-4">
+
+        @if (cargando)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="cliente" OnValidSubmit="Guardar">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                @if (erroresNegocio.Any())
+                {
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach (var error in erroresNegocio)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (mensajeError != null)
+                {
+                    <div class="alert alert-danger">@mensajeError</div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nombre</label>
+                        <InputText class="form-control" @bind-Value="cliente.Nombre" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Apellido</label>
+                        <InputText class="form-control" @bind-Value="cliente.Apellido" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cédula de Identidad</label>
+                        <InputText class="form-control" @bind-Value="cliente.Ci" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <InputText class="form-control" @bind-Value="cliente.Telefono" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="cliente.Email" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tipo de Cliente</label>
+                        <InputSelect class="form-select" @bind-Value="cliente.TipoCliente">
+                            <option value="Comprador">Comprador</option>
+                            <option value="Vendedor">Vendedor</option>
+                            <option value="Ambos">Ambos</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Dirección</label>
+                    <InputText class="form-control" @bind-Value="cliente.Direccion" />
+                </div>
+                
+                <button type="submit" class="btn btn-success me-2" disabled="@guardando">
+                    <i class="bi bi-check-circle"></i>
+                    @(guardando ? "Guardando..." : (esEdicion ? "Actualizar" : "Guardar"))
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                    Cancelar
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ClienteDTO cliente = new() { FechaRegistro = DateTime.Now, TipoCliente = "Comprador" };
+    private bool esEdicion => Id.HasValue;
+    private List<string> erroresNegocio = new();
+    private string? mensajeError;
+    private bool cargando = false;
+    private bool guardando = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (esEdicion)
+        {
+            cargando = true;
+            try
+            {
+                var existente = await ServicioClientes.Buscar(Id!.Value);
+                cliente = existente;
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo cargar el cliente: " + ex.Message;
+            }
+            finally
+            {
+                cargando = false;
+            }
+        }
+    }
+
+    private async Task Guardar()
+    {
+        erroresNegocio.Clear();
+        mensajeError = null;
+        int idParaExcluir = esEdicion ? cliente.Id : 0;
+
+        try
+        {
+            if (await ServicioClientes.ExisteCi(cliente.Ci, idParaExcluir))
+                erroresNegocio.Add("Ya existe un cliente registrado con esa CI.");
+
+            if (await ServicioClientes.ExisteTelefono(cliente.Telefono, idParaExcluir))
+                erroresNegocio.Add("Ya existe un cliente registrado con ese teléfono.");
+
+            if (await ServicioClientes.ExisteEmail(cliente.Email, idParaExcluir))
+                erroresNegocio.Add("Ya existe un cliente registrado con ese email.");
+
+            if (erroresNegocio.Any())
+                return;
+
+            guardando = true;
+
+            if (esEdicion)
+            {
+                await ServicioClientes.Modificar(cliente);
+            }
+            else
+            {
+                await ServicioClientes.Guardar(cliente);
+            }
+
+            NavigationManager.NavigateTo("/clientes");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo guardar: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/clientes");
+    }
+    
+}

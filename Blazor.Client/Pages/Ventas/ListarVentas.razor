@@ -1,0 +1,142 @@
+﻿@page "/ventas"
+@inject ServicioVentas ServicioVentas
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Ventas</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Ventas</h2>
+            <p class="text-muted mb-0">Historial de transacciones</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-cart-plus"></i> Nueva Venta
+        </button>
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!ventas.Any())
+    {
+        <div class="alert alert-info">No se registraron ventas todavía.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Cliente</th>
+                            <th>Propiedad</th>
+                            <th>Agente</th>
+                            <th>Monto</th>
+                            <th>Comisión</th>
+                            <th>Forma de Pago</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var venta in ventas)
+                        {
+                            <tr>
+                                <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
+                                <td>@venta.IdClienteNavigation?.Nombre @venta.IdClienteNavigation?.Apellido</td>
+                                <td>@venta.IdPropiedadNavigation?.Titulo</td>
+                                <td>@venta.IdTrabajadorNavigation?.Nombre @venta.IdTrabajadorNavigation?.Apellido</td>
+                                <td>@venta.Monto.ToString("C0")</td>
+                                <td>@venta.ComisionGenerada.ToString("C0")</td>
+                                <td>@venta.FormaPago</td>
+                                <td>
+                                    <span class="badge @ObtenerClaseEstado(venta.Estado)">@venta.Estado</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(venta.Id)">
+                                        <i class="bi bi-x-circle"></i> Cancelar
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<VentaDTO> ventas = new();
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarVentas();
+    }
+
+    private async Task CargarVentas()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            ventas = await ServicioVentas.Lista();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de ventas: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/ventas/registrar");
+    }
+
+    private async Task ConfirmarEliminar(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Cancelar esta venta? La propiedad volverá a estar Disponible.");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioVentas.Eliminar(id);
+                await CargarVentas();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo cancelar la venta: " + ex.Message;
+            }
+        }
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Completada" => "bg-success",
+            "En proceso" => "bg-warning text-dark",
+            "Cancelada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

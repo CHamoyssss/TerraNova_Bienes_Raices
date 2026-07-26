@@ -1,0 +1,74 @@
+﻿@page "/login"
+@layout LoginLayout
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject NavigationManager NavigationManager
+
+<PageTitle>Iniciar Sesión</PageTitle>
+
+<div class="login-container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="login-card shadow p-4" style="max-width: 400px; width: 100%;">
+        <div class="text-center mb-4">
+            <i class="bi bi-houses-fill" style="font-size: 3rem; color: var(--bs-primary);"></i>
+            <h3 class="fw-bold mt-2">TerraNova Bienes Raíces</h3>
+            <p class="text-muted">Inicia sesión para continuar</p>
+        </div>
+
+        <EditForm Model="modelo" OnValidSubmit="IniciarSesion">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            @if (mensajeError != null)
+            {
+                <div class="alert alert-danger">@mensajeError</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <InputText class="form-control" @bind-Value="modelo.NombreUsuario" />
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Contraseña</label>
+                <InputText type="password" class="form-control" @bind-Value="modelo.Contrasena" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@cargando">
+                @(cargando ? "Ingresando..." : "Iniciar Sesión")
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginRequestDTO modelo = new();
+    private bool cargando = false;
+    private string? mensajeError;
+
+    private async Task IniciarSesion()
+    {
+        mensajeError = null;
+        cargando = true;
+
+        try
+        {
+            bool exito = await ServicioAutenticacion.Login(modelo.NombreUsuario, modelo.Contrasena);
+
+            if (exito)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                mensajeError = "Usuario o contraseña incorrectos.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo conectar con el servidor: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}
