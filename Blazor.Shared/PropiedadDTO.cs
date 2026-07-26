@@ -1,6 +1,6 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Collections.Generic;
-using System.ComponentModel;
+
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,13 +11,17 @@ namespace Blazor.Shared
     {
         public int Id { get; set; }
 
-        public string Titulo { get; set; } = null;
+        [Required(ErrorMessage = "El título es obligatorio")]
+        public string Titulo { get; set; } = string.Empty;
 
-        public string Tipo { get; set; } = null;
+        [Required(ErrorMessage = "El tipo es obligatorio")]
+        public string Tipo { get; set; } = string.Empty;
 
-        public string Direccion { get; set; } = null;
+        [Required(ErrorMessage = "La dirección es obligatoria")]
+        public string Direccion { get; set; } = string.Empty;
 
-        public string Zona { get; set; } = null;
+        [Required(ErrorMessage = "La zona es obligatoria")]
+        public string Zona { get; set; } = string.Empty;
 
         public decimal Precio { get; set; }
 
@@ -29,13 +33,15 @@ namespace Blazor.Shared
 
         public int Garajes { get; set; }
 
-        public string Estado { get; set; } = null;
+        [Required(ErrorMessage = "El estado es obligatorio")]
+        public string Estado { get; set; } = "Disponible";
 
-        public string TipoOperacion { get; set; } = null;
+        [Required(ErrorMessage = "El tipo de operación es obligatorio")]
+        public string TipoOperacion { get; set; } = "Venta";
 
-        public string Descripcion { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
 
-        public string ImagenUrl { get; set; }
+        public string ImagenUrl { get; set; } = string.Empty;
 
         public int IdTrabajador { get; set; }
 

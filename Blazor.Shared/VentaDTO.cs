@@ -1,4 +1,6 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,11 +24,13 @@ namespace Blazor.Shared
 
         public decimal ComisionGenerada { get; set; }
 
-        public string FormaPago { get; set; } = null;
+        [Required(ErrorMessage = "La forma de pago es obligatoria")]
+        public string FormaPago { get; set; } = "Contado";
 
-        public string Estado { get; set; } = null;
+        [Required(ErrorMessage = "El estado es obligatorio")]
+        public string Estado { get; set; } = "Completada";
 
-        public string Observaciones { get; set; }
+        public string Observaciones { get; set; } = string.Empty;
 
         public virtual ClienteDTO IdClienteNavigation { get; set; } = null;
 

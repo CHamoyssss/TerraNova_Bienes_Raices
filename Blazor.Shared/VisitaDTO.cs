@@ -1,4 +1,6 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,9 +20,10 @@ namespace Blazor.Shared
 
         public DateTime FechaVisita { get; set; }
 
-        public string Estado { get; set; } = null;
+        [Required(ErrorMessage = "El estado es obligatorio")]
+        public string Estado { get; set; } = "Programada";
 
-        public string Comentarios { get; set; }
+        public string Comentarios { get; set; } = string.Empty;
 
         public virtual ClienteDTO IdClienteNavigation { get; set; } = null;
 
