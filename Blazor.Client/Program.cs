@@ -15,6 +15,7 @@ builder.Services.AddScoped<ServicioVentas>();
 builder.Services.AddScoped<ServicioVisitas>();
 builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioAutenticacion>();
+builder.Services.AddScoped<DashboardService>();
 builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5150/") });

@@ -4,6 +4,7 @@ using Blazor.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Blazor.Server.Migrations
 {
     [DbContext(typeof(TerraNovaDbContext))]
-    partial class TerraNovaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260728121608_AddLatitudLongitud")]
+    partial class AddLatitudLongitud
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

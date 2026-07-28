@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @inject ServicioAutenticacion ServicioAutenticacion
 @inject NavigationManager NavigationManager
 
@@ -83,8 +83,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Aseguramos que la sesión se cargue desde localStorage antes de verificar
-        await ServicioAutenticacion.InicializarAsync();
+        // La sesión ya se cargó en App.razor (InicializarAsync), aquí solo verificamos
         verificando = false;
 
         if (!ServicioAutenticacion.EstaLogueado)

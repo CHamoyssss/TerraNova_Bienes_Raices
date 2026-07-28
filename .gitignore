@@ -49,3 +49,6 @@ appsettings.*.local.json
 playwright-report/
 test-results/
 .playwright-mcp/
+
+## OpenCode / OMO
+.omo/

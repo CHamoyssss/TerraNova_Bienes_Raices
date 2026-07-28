@@ -1,6 +1,7 @@
-﻿@page "/propiedades"
+@page "/propiedades"
 @inject ServicioPropiedades ServicioPropiedades
 @inject NavigationManager NavigationManager
+@inject ServicioAutenticacion ServicioAutenticacion
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Propiedades</PageTitle>
@@ -48,6 +49,16 @@
                 </button>
             </div>
         </div>
+
+        @if (!ServicioAutenticacion.EsAdmin)
+        {
+            <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="soloMias" @bind="soloMisPropiedades" @bind:after="Filtrar" />
+                <label class="form-check-label" for="soloMias">
+                    Mostrar solo mis propiedades asignadas
+                </label>
+            </div>
+        }
     </div>
 
     @if (cargando)
@@ -88,21 +99,36 @@
                         {
                             <tr>
                                 <td>@propiedad.Id</td>
-                                <td>@propiedad.Titulo</td>
+                                <td>
+                                    @propiedad.Titulo
+                                    @if (!ServicioAutenticacion.EsAdmin && propiedad.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador)
+                                    {
+                                        <span class="badge bg-primary ms-1">Mía</span>
+                                    }
+                                </td>
                                 <td>@propiedad.Tipo</td>
                                 <td>@propiedad.Zona</td>
-                                <td>@propiedad.Precio.ToString("C0")</td>
+                                <td>@("$" + propiedad.Precio.ToString("N0"))</td>
                                 <td>@propiedad.TipoOperacion</td>
                                 <td>
                                     <span class="badge @ObtenerClaseEstado(propiedad.Estado)">@propiedad.Estado</span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(propiedad.Id)">
-                                        <i class="bi bi-pencil"></i>Modificar
+                                    @if (PuedeEditar(propiedad))
+                                    {
+                                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(propiedad.Id)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-info me-1" @onclick="() => VerDetalle(propiedad.Id)">
+                                        <i class="bi bi-eye"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(propiedad.Id)">
-                                        <i class="bi bi-trash"></i>Eliminar
-                                    </button>
+                                    @if (ServicioAutenticacion.EsAdmin)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(propiedad.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
                                 </td>
                             </tr>
                         }
@@ -119,6 +145,7 @@
     private string textoBusqueda = string.Empty;
     private string tipoFiltro = string.Empty;
     private string estadoFiltro = string.Empty;
+    private bool soloMisPropiedades = false;
     private bool cargando = true;
     private string? mensajeError;
 
@@ -155,6 +182,11 @@
     {
         var resultado = propiedades.AsEnumerable();
 
+        if (soloMisPropiedades)
+        {
+            resultado = resultado.Where(p => p.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador);
+        }
+
         if (!string.IsNullOrEmpty(tipoFiltro))
             resultado = resultado.Where(p => p.Tipo == tipoFiltro);
 
@@ -177,7 +209,8 @@
         textoBusqueda = string.Empty;
         tipoFiltro = string.Empty;
         estadoFiltro = string.Empty;
-        propiedadesFiltradas = propiedades;
+        soloMisPropiedades = false;
+        AplicarFiltros();
     }
 
     private void IrARegistrar()
@@ -217,5 +250,16 @@
             "Alquilada" => "bg-info text-dark",
             _ => "bg-secondary"
         };
+    }
+
+    private void VerDetalle(int id)
+    {
+        NavigationManager.NavigateTo($"/propiedades/detalle/{id}");
+    }
+
+    private bool PuedeEditar(PropiedadDTO propiedad)
+    {
+        return ServicioAutenticacion.EsAdmin ||
+               propiedad.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador;
     }
 }

@@ -46,6 +46,9 @@ namespace Blazor.Shared
         public int IdTrabajador { get; set; }
 
         public DateTime FechaPublicacion { get; set; }
+
+        public double? Latitud { get; set; }
+        public double? Longitud { get; set; }
         public string NombreTrabajador { get; set; } = null;
 
         public virtual TrabajadorDTO IdTrabajadorNavigation { get; set; } = null;

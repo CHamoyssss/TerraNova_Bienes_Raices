@@ -1,5 +1,5 @@
 /* ============================================
-   TERRAVOVA BIENES RAÍCES - Estilos personalizados
+   TERRAVOVA BIENES RA�CES - Estilos personalizados
    ============================================ */
 
 /* === LAYOUT GENERAL === */
@@ -242,4 +242,123 @@ main article.content {
 
 code {
     color: #c02d76;
+}
+
+/* ============================================
+   DASHBOARD (Home.razor) - Tarjetas de estad�sticas
+   ============================================ */
+.dashboard-container {
+    padding-bottom: 1rem;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8ecf1;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 100%;
+}
+
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.stat-title {
+    color: #8a94a6;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.15rem;
+}
+
+.stat-value {
+    color: #1a3a4a;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* === ACTIVIDAD RECIENTE === */
+.activity-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+    .activity-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.65rem 1.25rem;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+        .activity-list li:last-child {
+            border-bottom: none;
+        }
+
+        .activity-list li i {
+            color: #0d7a6e;
+            font-size: 1.1rem;
+            margin-top: 0.15rem;
+        }
+
+/* === ACCESOS R�PIDOS === */
+.btn-quick-access {
+    background: #f8f9fc;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    padding: 1rem 0.5rem;
+    text-align: center;
+    color: #1a3a4a;
+    transition: all 0.2s;
+}
+
+    .btn-quick-access i {
+        font-size: 1.5rem;
+        color: #0d7a6e;
+        display: block;
+    }
+
+    .btn-quick-access:hover {
+        background: #0d7a6e;
+        color: #fff;
+        border-color: #0d7a6e;
+    }
+
+        .btn-quick-access:hover i {
+            color: #fff;
+        }
+
+.panel-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+/* ============================================
+   LOGIN (Login.razor)
+   ============================================ */
+.login-container {
+    min-height: 100vh;
+}
+
+.login-card {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ============================================
+   MAPA (Leaflet - Registrar Propiedad/Cliente)
+   ============================================ */
+.leaflet-container {
+    border: 1px solid #dde1e6;
+    z-index: 1; /* evita que el mapa quede por encima del sidebar o men�s */
 }
