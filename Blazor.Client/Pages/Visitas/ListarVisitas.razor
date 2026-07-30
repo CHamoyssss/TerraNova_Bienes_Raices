@@ -16,6 +16,34 @@
         </button>
     </div>
 
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Buscar por cliente, propiedad o comentarios..."
+                       @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" @bind="estadoFiltro" @bind:after="Filtrar">
+                    <option value="">Todos los estados</option>
+                    <option value="Programada">Programada</option>
+                    <option value="Realizada">Realizada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control" @bind="fechaDesde" @bind:after="Filtrar" placeholder="Desde" />
+            </div>
+            <div class="col-md-2">
+                <input type="date" class="form-control" @bind="fechaHasta" @bind:after="Filtrar" placeholder="Hasta" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimpiarFiltros">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
     @if (cargando)
     {
         <div class="text-center my-5">
@@ -31,6 +59,10 @@
     else if (!visitas.Any())
     {
         <div class="alert alert-info">No hay visitas programadas.</div>
+    }
+    else if (!visitasFiltradas.Any())
+    {
+        <div class="alert alert-info">No se encontraron visitas con esos filtros.</div>
     }
     else
     {
@@ -49,7 +81,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var visita in visitas)
+                        @foreach (var visita in visitasFiltradas)
                         {
                             <tr>
                                 <td>@visita.FechaVisita.ToString("dd/MM/yyyy HH:mm")</td>
@@ -107,6 +139,11 @@
 
 @code {
     private List<VisitaDTO> visitas = new();
+    private List<VisitaDTO> visitasFiltradas = new();
+    private string textoBusqueda = string.Empty;
+    private string estadoFiltro = string.Empty;
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
     private bool cargando = true;
     private string? mensajeError;
     private bool mostrarModalConfirmacion = false;
@@ -124,6 +161,7 @@
         try
         {
             visitas = await ServicioVisitas.Lista();
+            AplicarFiltros();
         }
         catch (Exception ex)
         {
@@ -133,6 +171,46 @@
         {
             cargando = false;
         }
+    }
+
+    private void Filtrar()
+    {
+        AplicarFiltros();
+    }
+
+    private void AplicarFiltros()
+    {
+        var resultado = visitas.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(estadoFiltro))
+            resultado = resultado.Where(v => v.Estado == estadoFiltro);
+
+        if (fechaDesde.HasValue)
+            resultado = resultado.Where(v => v.FechaVisita >= fechaDesde.Value);
+
+        if (fechaHasta.HasValue)
+            resultado = resultado.Where(v => v.FechaVisita <= fechaHasta.Value.AddDays(1));
+
+        if (!string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            var texto = textoBusqueda.ToLower();
+            resultado = resultado.Where(v =>
+                (v.IdClienteNavigation?.Nombre?.ToLower().Contains(texto) ?? false) ||
+                (v.IdClienteNavigation?.Apellido?.ToLower().Contains(texto) ?? false) ||
+                (v.IdPropiedadNavigation?.Titulo?.ToLower().Contains(texto) ?? false) ||
+                (v.Comentarios?.ToLower().Contains(texto) ?? false));
+        }
+
+        visitasFiltradas = resultado.ToList();
+    }
+
+    private void LimpiarFiltros()
+    {
+        textoBusqueda = string.Empty;
+        estadoFiltro = string.Empty;
+        fechaDesde = null;
+        fechaHasta = null;
+        visitasFiltradas = visitas;
     }
 
     private void IrARegistrar()
