@@ -51,7 +51,7 @@ namespace Blazor.Shared
         public double? Longitud { get; set; }
         public string NombreTrabajador { get; set; } = null;
 
-        public virtual TrabajadorDTO IdTrabajadorNavigation { get; set; } = null;
+        public virtual TrabajadorDTO? IdTrabajadorNavigation { get; set; }
 
         public virtual ICollection<VentaDTO> Venta { get; set; } = new List<VentaDTO>();
 

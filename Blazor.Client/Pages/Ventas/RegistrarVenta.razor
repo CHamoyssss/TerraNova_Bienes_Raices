@@ -34,13 +34,15 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Cliente</label>
-                        <InputSelect class="form-select" @bind-Value="venta.IdCliente" @bind:after="OnClienteSeleccionado">
+                        <select class="form-select" @onchange="OnClienteChanged">
                             <option value="0">-- Seleccione un cliente --</option>
                             @foreach (var cliente in clientes)
                             {
-                                <option value="@cliente.Id">@cliente.Nombre @cliente.Apellido - CI: @cliente.Ci</option>
+                                <option value="@cliente.Id" selected="@(venta.IdCliente == cliente.Id)">
+                                    @cliente.Nombre @cliente.Apellido - CI: @cliente.Ci
+                                </option>
                             }
-                        </InputSelect>
+                        </select>
                         @if (clienteSeleccionado != null)
                         {
                             <div class="alert alert-light border mt-2 py-2 px-3 mb-0">
@@ -54,13 +56,15 @@
 
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Propiedad Disponible</label>
-                        <InputSelect class="form-select" @bind-Value="venta.IdPropiedad" @bind:after="OnPropiedadSeleccionada">
+                        <select class="form-select" @onchange="OnPropiedadChanged">
                             <option value="0">-- Seleccione una propiedad --</option>
                             @foreach (var prop in propiedadesDisponibles)
                             {
-                                <option value="@prop.Id">@prop.Titulo - @prop.Precio.ToString("C0")</option>
+                                <option value="@prop.Id" selected="@(venta.IdPropiedad == prop.Id)">
+                                    @prop.Titulo - @($"${prop.Precio:N0}")
+                                </option>
                             }
-                        </InputSelect>
+                        </select>
                         @if (propiedadSeleccionada != null)
                         {
                             <div class="alert alert-light border mt-2 py-2 px-3 mb-0">
@@ -74,32 +78,34 @@
 
                 <div class="mb-3">
                     <label class="form-label">Agente que gestiona la venta</label>
-                    <InputSelect class="form-select" @bind-Value="venta.IdTrabajador" @bind:after="CalcularComision">
+                    <select class="form-select" @onchange="OnTrabajadorChanged">
                         <option value="0">-- Seleccione un agente --</option>
                         @foreach (var trabajador in trabajadores)
                         {
-                            <option value="@trabajador.Id">@trabajador.Nombre @trabajador.Apellido (@trabajador.PorcentajeComision%)</option>
+                            <option value="@trabajador.Id" selected="@(venta.IdTrabajador == trabajador.Id)">
+                                @trabajador.Nombre @trabajador.Apellido (@trabajador.PorcentajeComision%)
+                            </option>
                         }
-                    </InputSelect>
+                    </select>
                 </div>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Monto (Bs.)</label>
-                        <InputNumber class="form-control" @bind-Value="venta.Monto" @bind:after="CalcularComision" />
+                        <label class="form-label">Monto ($)</label>
+                        <input type="number" class="form-control" value="@(venta.Monto)" @onchange="OnMontoChanged" step="0.01" lang="es" />
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">Comisión Generada (Bs.)</label>
-                        <InputNumber class="form-control" @bind-Value="venta.ComisionGenerada" readonly />
+                        <label class="form-label">Comisión Generada ($)</label>
+                        <input type="number" class="form-control" value="@(venta.ComisionGenerada)" readonly step="0.01" lang="es" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Forma de Pago</label>
-                        <InputSelect class="form-select" @bind-Value="venta.FormaPago">
+                        <select class="form-select" @bind="venta.FormaPago">
                             <option value="Contado">Contado</option>
                             <option value="Crédito">Crédito</option>
                             <option value="Financiado">Financiado</option>
                             <option value="Alquiler">Alquiler</option>
-                        </InputSelect>
+                        </select>
                     </div>
                 </div>
 
@@ -151,17 +157,43 @@
         }
     }
 
-    private void OnClienteSeleccionado()
+    private void OnClienteChanged(ChangeEventArgs e)
     {
-        clienteSeleccionado = clientes.FirstOrDefault(c => c.Id == venta.IdCliente);
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            venta.IdCliente = id;
+            clienteSeleccionado = clientes.FirstOrDefault(c => c.Id == id);
+        }
     }
 
-    private void OnPropiedadSeleccionada()
+    private void OnPropiedadChanged(ChangeEventArgs e)
     {
-        propiedadSeleccionada = propiedadesDisponibles.FirstOrDefault(p => p.Id == venta.IdPropiedad);
-        if (propiedadSeleccionada != null)
+        if (int.TryParse(e.Value?.ToString(), out int id))
         {
-            venta.Monto = propiedadSeleccionada.Precio;
+            venta.IdPropiedad = id;
+            propiedadSeleccionada = propiedadesDisponibles.FirstOrDefault(p => p.Id == id);
+            if (propiedadSeleccionada != null)
+            {
+                venta.Monto = propiedadSeleccionada.Precio;
+                CalcularComision();
+            }
+        }
+    }
+
+    private void OnTrabajadorChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            venta.IdTrabajador = id;
+            CalcularComision();
+        }
+    }
+
+    private void OnMontoChanged(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal monto))
+        {
+            venta.Monto = monto;
             CalcularComision();
         }
     }
@@ -171,8 +203,13 @@
         var trabajador = trabajadores.FirstOrDefault(t => t.Id == venta.IdTrabajador);
         if (trabajador != null)
         {
-            venta.ComisionGenerada = venta.Monto * (trabajador.PorcentajeComision / 100);
+            venta.ComisionGenerada = decimal.Round(venta.Monto * (trabajador.PorcentajeComision / 100m), 2);
         }
+        else
+        {
+            venta.ComisionGenerada = 0;
+        }
+        StateHasChanged();
     }
 
     private async Task Guardar()

@@ -32,10 +32,10 @@ namespace Blazor.Shared
 
         public string Observaciones { get; set; } = string.Empty;
 
-        public virtual ClienteDTO IdClienteNavigation { get; set; } = null;
+        public virtual ClienteDTO? IdClienteNavigation { get; set; }
 
-        public virtual PropiedadDTO IdPropiedadNavigation { get; set; } = null;
+        public virtual PropiedadDTO? IdPropiedadNavigation { get; set; }
 
-        public virtual TrabajadorDTO IdTrabajadorNavigation { get; set; } = null;
+        public virtual TrabajadorDTO? IdTrabajadorNavigation { get; set; }
     }
 }

@@ -261,4 +261,46 @@ namespace Blazor.Server.Controllers;
         }
         return Ok(RespuestaApi);
     }
+
+    [HttpDelete]
+    [Route("Eliminar/{Cod}")]
+    public async Task<IActionResult> Eliminar(int Cod)
+    {
+        var RespuestaApi = new ResponseAPI<int>();
+        try
+        {
+            var propiedad = await Contexto.Propiedades
+                .Include(p => p.Venta)
+                .Include(p => p.Visita)
+                .FirstOrDefaultAsync(p => p.Id == Cod);
+
+            if (propiedad != null)
+            {
+                if (propiedad.Venta.Any() || propiedad.Visita.Any())
+                {
+                    RespuestaApi.EsCorrecto = false;
+                    RespuestaApi.Mensaje = "No se puede eliminar la propiedad porque tiene ventas o visitas asociadas.";
+                }
+                else
+                {
+                    Contexto.Propiedades.Remove(propiedad);
+                    await Contexto.SaveChangesAsync();
+                    RespuestaApi.EsCorrecto = true;
+                    RespuestaApi.Valor = Cod;
+                    RespuestaApi.Mensaje = "Propiedad eliminada correctamente";
+                }
+            }
+            else
+            {
+                RespuestaApi.EsCorrecto = false;
+                RespuestaApi.Mensaje = "Propiedad no encontrada";
+            }
+        }
+        catch (Exception ex)
+        {
+            RespuestaApi.EsCorrecto = false;
+            RespuestaApi.Mensaje = ex.Message;
+        }
+        return Ok(RespuestaApi);
+    }
 }

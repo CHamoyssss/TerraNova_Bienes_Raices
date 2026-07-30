@@ -98,13 +98,24 @@ namespace Blazor.Server.Controllers
             var RespuestaApi = new ResponseAPI<int>();
             try
             {
-                var ClienteEliminar = await Contexto.Clientes.FirstOrDefaultAsync(c => c.Id == Cod);
+                var ClienteEliminar = await Contexto.Clientes
+                    .Include(c => c.Venta)
+                    .Include(c => c.Visita)
+                    .FirstOrDefaultAsync(c => c.Id == Cod);
                 if (ClienteEliminar != null)
                 {
-                    Contexto.Clientes.Remove(ClienteEliminar);
-                    await Contexto.SaveChangesAsync();
-                    RespuestaApi.EsCorrecto = true;
-                    RespuestaApi.Mensaje = "Datos del cliente eliminado";
+                    if (ClienteEliminar.Venta.Any() || ClienteEliminar.Visita.Any())
+                    {
+                        RespuestaApi.EsCorrecto = false;
+                        RespuestaApi.Mensaje = "No se puede eliminar el cliente porque tiene ventas o visitas asociadas.";
+                    }
+                    else
+                    {
+                        Contexto.Clientes.Remove(ClienteEliminar);
+                        await Contexto.SaveChangesAsync();
+                        RespuestaApi.EsCorrecto = true;
+                        RespuestaApi.Mensaje = "Cliente eliminado correctamente";
+                    }
                 }
                 else
                 {

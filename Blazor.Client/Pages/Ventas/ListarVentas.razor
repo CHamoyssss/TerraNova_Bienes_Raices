@@ -59,8 +59,8 @@
                                 <td>@venta.IdClienteNavigation?.Nombre @venta.IdClienteNavigation?.Apellido</td>
                                 <td>@venta.IdPropiedadNavigation?.Titulo</td>
                                 <td>@venta.IdTrabajadorNavigation?.Nombre @venta.IdTrabajadorNavigation?.Apellido</td>
-                                <td>@venta.Monto.ToString("C0")</td>
-                                <td>@venta.ComisionGenerada.ToString("C0")</td>
+                                <td>@($"${venta.Monto:N0}")</td>
+                                <td>@($"${venta.ComisionGenerada:N2}")</td>
                                 <td>@venta.FormaPago</td>
                                 <td>
                                     <span class="badge @ObtenerClaseEstado(venta.Estado)">@venta.Estado</span>
