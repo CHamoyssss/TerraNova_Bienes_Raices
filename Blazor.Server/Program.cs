@@ -1,4 +1,5 @@
 using Blazor.Server.Models;
+using Blazor.Server.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<TerraNovaDbContext>(opciones =>
     opciones.UseSqlServer(builder.Configuration.GetConnectionString("CadenaSql")));
+
+builder.Services.AddTransient<ServicioEmail>();
 
 builder.Services.AddCors(
     opciones => {

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Blazor.Server.Services;
+using Microsoft.AspNetCore.Mvc;
 using Blazor.Server.Models;
 using Blazor.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace Blazor.Server.Controllers
     public class VisitaController : ControllerBase
     {
         private readonly TerraNovaDbContext Contexto;
+        private readonly ServicioEmail _servicioEmail;
 
-        public VisitaController(TerraNovaDbContext contexto)
+        public VisitaController(TerraNovaDbContext contexto, ServicioEmail servicioEmail)
         {
             Contexto = contexto;
+            _servicioEmail = servicioEmail;
         }
 
         [HttpGet]
@@ -129,6 +132,14 @@ namespace Blazor.Server.Controllers
                     RespuestaAPI.EsCorrecto = true;
                     RespuestaAPI.Valor = DatosVisita.Id;
                     RespuestaAPI.Mensaje = "Visita programada correctamente";
+
+                    try
+                    {
+                        await _servicioEmail.EnviarNotificacionVisita(DatosVisita.Id);
+                    }
+                    catch
+                    {
+                    }
                 }
                 else
                 {
@@ -232,6 +243,14 @@ namespace Blazor.Server.Controllers
 
                     RespuestaApi.EsCorrecto = true;
                     RespuestaApi.Valor = VisitaBd.Id;
+
+                    try
+                    {
+                        await _servicioEmail.EnviarNotificacionVisita(VisitaBd.Id);
+                    }
+                    catch
+                    {
+                    }
                 }
                 else
                 {

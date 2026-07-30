@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace Blazor.Shared
 {
@@ -18,14 +14,17 @@ namespace Blazor.Shared
 
         public DateTime FechaVisita { get; set; }
 
-        public string Estado { get; set; } = null;
+        public string? Estado { get; set; }
 
-        public string Comentarios { get; set; }
+        public string? Comentarios { get; set; }
 
-        public virtual ClienteDTO IdClienteNavigation { get; set; } = null;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ClienteDTO? IdClienteNavigation { get; set; }
 
-        public virtual PropiedadDTO IdPropiedadNavigation { get; set; } = null;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public PropiedadDTO? IdPropiedadNavigation { get; set; }
 
-        public virtual TrabajadorDTO IdTrabajadorNavigation { get; set; } = null;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public TrabajadorDTO? IdTrabajadorNavigation { get; set; }
     }
 }
