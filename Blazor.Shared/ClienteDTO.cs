@@ -1,4 +1,6 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,21 +12,30 @@ namespace Blazor.Shared
     {
         public int Id { get; set; }
 
-        public string Nombre { get; set; } = null;
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        public string Nombre { get; set; } = string.Empty;
 
-        public string Apellido { get; set; } = null;
+        [Required(ErrorMessage = "El apellido es obligatorio")]
+        public string Apellido { get; set; } = string.Empty;
 
-        public string Ci { get; set; } = null;
+        [Required(ErrorMessage = "La CI es obligatoria")]
+        public string Ci { get; set; } = string.Empty;
 
-        public string Telefono { get; set; } = null;
+        [Required(ErrorMessage = "El teléfono es obligatorio")]
+        [Phone(ErrorMessage = "Teléfono no válido")]
+        public string Telefono { get; set; } = string.Empty;
 
-        public string Email { get; set; } = null;
+        [Required(ErrorMessage = "El email es obligatorio")]
+        [EmailAddress(ErrorMessage = "Email no válido")]
+        public string Email { get; set; } = string.Empty;
 
-        public string Direccion { get; set; }
+        [Required(ErrorMessage = "La dirección es obligatoria")]
+        public string Direccion { get; set; } = string.Empty;
 
         public DateTime FechaRegistro { get; set; }
 
-        public string TipoCliente { get; set; } = null;
+        [Required(ErrorMessage = "El tipo de cliente es obligatorio")]
+        public string TipoCliente { get; set; } = "Comprador";
 
         public virtual ICollection<VentaDTO> Venta { get; set; } = new List<VentaDTO>();
 

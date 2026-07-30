@@ -35,6 +35,8 @@ public partial class Propiedad
 
     public int IdTrabajador { get; set; }
 
+    public double? Latitud { get; set; }
+    public double? Longitud { get; set; }
     public DateTime FechaPublicacion { get; set; }
 
     public virtual Trabajador IdTrabajadorNavigation { get; set; } = null!;

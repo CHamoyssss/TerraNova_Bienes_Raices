@@ -1,6 +1,8 @@
-﻿@page "/visitas"
+@page "/visitas"
 @inject ServicioVisitas ServicioVisitas
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>Visitas</PageTitle>
 
@@ -165,6 +167,7 @@
         }
         catch (Exception ex)
         {
+            ToastService.ShowError("Error al cargar visitas");
             mensajeError = "No se pudo cargar la lista de visitas: " + ex.Message;
         }
         finally
@@ -240,10 +243,12 @@
         try
         {
             await ServicioVisitas.Eliminar(visitaIdAEliminar);
+            ToastService.ShowSuccess("Visita eliminada correctamente");
             await CargarVisitas();
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo eliminar: {ex.Message}");
             mensajeError = "No se pudo eliminar: " + ex.Message;
         }
     }

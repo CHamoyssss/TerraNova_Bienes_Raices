@@ -1,10 +1,12 @@
-﻿@page "/visitas/registrar"
+@page "/visitas/registrar"
 @page "/visitas/registrar/{Id:int}"
 @inject ServicioVisitas ServicioVisitas
 @inject ServicioClientes ServicioClientes
 @inject ServicioPropiedades ServicioPropiedades
 @inject ServicioTrabajadores ServicioTrabajadores
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>@(esEdicion ? "Editar Visita" : "Programar Visita")</PageTitle>
 
@@ -152,16 +154,19 @@
             if (esEdicion)
             {
                 await ServicioVisitas.Modificar(visita);
+                ToastService.ShowSuccess("Visita actualizada correctamente");
             }
             else
             {
                 await ServicioVisitas.Guardar(visita);
+                ToastService.ShowSuccess("Visita registrada correctamente");
             }
 
             NavigationManager.NavigateTo("/visitas");
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo guardar la visita: {ex.Message}");
             mensajeError = "No se pudo guardar: " + ex.Message;
         }
         finally

@@ -1,9 +1,11 @@
-﻿@page "/usuarios/registrar"
+@page "/usuarios/registrar"
 @page "/usuarios/registrar/{Id:int}"
 @inject ServicioUsuarios ServicioUsuarios
 @inject ServicioTrabajadores ServicioTrabajadores
 @inject ServicioAutenticacion ServicioAutenticacion
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>@(esEdicion ? "Editar Usuario" : "Nuevo Usuario")</PageTitle>
 
@@ -148,18 +150,21 @@
         {
             if (!esEdicion)
             {
-                usuario.ContraseñaHash = contrasenaPlano; // el Server se encarga de hashearlo con BCrypt antes de guardar
+                usuario.ContraseñaHash = contrasenaPlano;
                 await ServicioUsuarios.Guardar(usuario);
+                ToastService.ShowSuccess("Usuario creado correctamente");
             }
             else
             {
                 await ServicioUsuarios.Modificar(usuario);
+                ToastService.ShowSuccess("Usuario actualizado correctamente");
             }
 
             NavigationManager.NavigateTo("/usuarios");
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo guardar: {ex.Message}");
             mensajeError = "No se pudo guardar: " + ex.Message;
         }
         finally

@@ -16,13 +16,13 @@ namespace Blazor.Client.Services
         {
             var Resultado = await Http.GetFromJsonAsync<ResponseAPI<List<PropiedadDTO>>>("api/Propiedad/Lista");
 
-            if (Resultado!.EsCorrecto)
+            if (Resultado != null && Resultado.EsCorrecto)
             {
-                return Resultado.Valor;
+                return Resultado.Valor!;
             }
             else
             {
-                throw new Exception(Resultado.Mensaje);
+                throw new Exception(Resultado?.Mensaje ?? "Error al obtener la lista de propiedades");
             }
         }
 
@@ -30,27 +30,34 @@ namespace Blazor.Client.Services
         {
             var Resultado = await Http.GetFromJsonAsync<ResponseAPI<List<PropiedadDTO>>>("api/Propiedad/Disponibles");
 
-            if (Resultado!.EsCorrecto)
+            if (Resultado != null && Resultado.EsCorrecto)
             {
-                return Resultado.Valor;
+                return Resultado.Valor!;
             }
             else
             {
-                throw new Exception(Resultado.Mensaje);
+                throw new Exception(Resultado?.Mensaje ?? "Error al obtener propiedades disponibles");
             }
         }
 
         public async Task<int> Guardar(PropiedadDTO ObjPropiedad)
         {
             var Resultado = await Http.PostAsJsonAsync("api/Propiedad/Guardar", ObjPropiedad);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
-            if (Respuesta!.EsCorrecto)
+            if (Respuesta != null && Respuesta.EsCorrecto)
             {
                 return Respuesta.Valor;
             }
             else
             {
-                throw new Exception(Respuesta.Mensaje);
+                throw new Exception(Respuesta?.Mensaje ?? "Error al guardar la propiedad");
             }
         }
 
@@ -58,40 +65,47 @@ namespace Blazor.Client.Services
         {
             var Resultado = await Http.DeleteAsync($"api/Propiedad/Eliminar/{Cod}");
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
-            if (Respuesta!.EsCorrecto)
+            if (Respuesta != null && Respuesta.EsCorrecto)
             {
-                return Respuesta.EsCorrecto;
+                return Respuesta.Valor > 0;
             }
             else
             {
-                throw new Exception(Respuesta?.Mensaje);
+                throw new Exception(Respuesta?.Mensaje ?? "Error al eliminar la propiedad");
             }
         }
 
         public async Task<PropiedadDTO> Buscar(int Cod)
         {
             var Resultado = await Http.GetFromJsonAsync<ResponseAPI<PropiedadDTO>>($"api/Propiedad/Buscar/{Cod}");
-            if (Resultado!.EsCorrecto)
+            if (Resultado != null && Resultado.EsCorrecto)
             {
-                return Resultado.Valor;
+                return Resultado.Valor!;
             }
             else
             {
-                throw new Exception(Resultado?.Mensaje);
+                throw new Exception(Resultado?.Mensaje ?? "Error al buscar la propiedad");
             }
         }
 
         public async Task<int> Modificar(PropiedadDTO NuevosDatos)
         {
             var Resultado = await Http.PutAsJsonAsync($"api/Propiedad/Modificar/{NuevosDatos.Id}", NuevosDatos);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
-            if (Respuesta!.EsCorrecto)
+            if (Respuesta != null && Respuesta.EsCorrecto)
             {
                 return Respuesta.Valor;
             }
             else
             {
-                throw new Exception(Respuesta?.Mensaje);
+                throw new Exception(Respuesta?.Mensaje ?? "Error desconocido al modificar la propiedad");
             }
         }
 
@@ -99,13 +113,13 @@ namespace Blazor.Client.Services
         {
             var Resultado = await Http.PutAsync($"api/Propiedad/CambiarEstado/{Cod}/{NuevoEstado}", null);
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
-            if (Respuesta!.EsCorrecto)
+            if (Respuesta != null && Respuesta.EsCorrecto)
             {
                 return Respuesta.Valor;
             }
             else
             {
-                throw new Exception(Respuesta?.Mensaje);
+                throw new Exception(Respuesta?.Mensaje ?? "Error al cambiar el estado");
             }
         }
     }

@@ -1,7 +1,9 @@
-﻿@page "/clientes/registrar"
+@page "/clientes/registrar"
 @page "/clientes/registrar/{Id:int}"
 @inject ServicioClientes ServicioClientes
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>@(esEdicion ? "Editar Cliente" : "Nuevo Cliente")</PageTitle>
 
@@ -152,16 +154,19 @@
             if (esEdicion)
             {
                 await ServicioClientes.Modificar(cliente);
+                ToastService.ShowSuccess("Cliente actualizado correctamente");
             }
             else
             {
                 await ServicioClientes.Guardar(cliente);
+                ToastService.ShowSuccess("Cliente registrado correctamente");
             }
 
             NavigationManager.NavigateTo("/clientes");
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo guardar el cliente: {ex.Message}");
             mensajeError = "No se pudo guardar: " + ex.Message;
         }
         finally

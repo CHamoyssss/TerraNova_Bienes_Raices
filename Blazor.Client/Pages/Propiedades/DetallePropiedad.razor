@@ -1,0 +1,228 @@
+@page "/propiedades/detalle/{Id:int}"
+@inject ServicioPropiedades ServicioPropiedades
+@inject ServicioVisitas ServicioVisitas
+@inject NavigationManager NavigationManager
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Detalle de Propiedad</PageTitle>
+
+<div class="dashboard-container">
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (propiedad == null)
+    {
+        <div class="alert alert-warning">Propiedad no encontrada.</div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">@propiedad.Titulo</h2>
+                <p class="text-muted mb-0">
+                    <span class="badge @ObtenerClaseEstado(propiedad.Estado)">@propiedad.Estado</span>
+                    &nbsp;@propiedad.Tipo · @propiedad.TipoOperacion
+                </p>
+            </div>
+            <div>
+                @if (PuedeEditar())
+                {
+                    <button class="btn btn-warning me-2" @onclick="IrAEditar">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                }
+                <button class="btn btn-secondary" @onclick="Volver">
+                    <i class="bi bi-arrow-left"></i> Volver
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="panel-card shadow-sm p-4 mb-3">
+                    <h5 class="mb-3">Descripci�n</h5>
+                    <p class="mb-0">
+                        @(string.IsNullOrWhiteSpace(propiedad.Descripcion) ? "Sin descripci�n." : propiedad.Descripcion)
+                    </p>
+                </div>
+
+                <div class="panel-card shadow-sm p-4">
+                    <h5 class="mb-3">Ubicaci�n</h5>
+                    <p class="text-muted mb-3">@propiedad.Direccion, @propiedad.Zona</p>
+                    @if (propiedad.Latitud.HasValue && propiedad.Longitud.HasValue)
+                    {
+                        <div id="mapaDetalle" style="height: 300px; border-radius: 8px;"></div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No se registr� ubicaci�n en el mapa.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="panel-card shadow-sm p-4 mb-3">
+                    <h5 class="mb-3">Especificaciones</h5>
+                    <div class="row g-3 text-center">
+                        <div class="col-4">
+                            <div class="fw-bold fs-4">@propiedad.Habitaciones</div>
+                            <small class="text-muted">Habitaciones</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold fs-4">@propiedad.Banios</div>
+                            <small class="text-muted">Ba�os</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold fs-4">@propiedad.Garajes</div>
+                            <small class="text-muted">Garajes</small>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">�rea</span>
+                        <strong>@propiedad.AreaM2 m�</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Precio</span>
+                        <strong>@("$" + propiedad.Precio.ToString("N0"))</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Agente</span>
+                        <strong>@propiedad.NombreTrabajador</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Publicado</span>
+                        <strong>@propiedad.FechaPublicacion.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                </div>
+
+                <div class="panel-card shadow-sm p-4">
+                    <h5 class="mb-3">Visitas programadas</h5>
+                    @if (!visitas.Any())
+                    {
+                        <p class="text-muted mb-0">No hay visitas registradas para esta propiedad.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var visita in visitas)
+                            {
+                                <li class="d-flex justify-content-between border-bottom py-2">
+                                    <span>@visita.FechaVisita.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span class="badge @ObtenerClaseEstadoVisita(visita.Estado)">@visita.Estado</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private PropiedadDTO? propiedad;
+    private List<VisitaDTO> visitas = new();
+    private bool cargando = true;
+    private string? mensajeError;
+
+    private DotNetObjectReference<DetallePropiedad>? objRef;
+    private bool mapaInicializado = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            propiedad = await ServicioPropiedades.Buscar(Id);
+            visitas = await ServicioVisitas.PorPropiedad(Id);
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la propiedad: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!cargando && !mapaInicializado && propiedad?.Latitud != null && propiedad?.Longitud != null)
+        {
+            mapaInicializado = true;
+            objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("inicializarMapa", "mapaDetalle", propiedad.Latitud, propiedad.Longitud, objRef);
+            await JSRuntime.InvokeVoidAsync("deshabilitarClicMapa", "mapaDetalle");
+        }
+    }
+
+    [JSInvokable]
+    public void ActualizarCoordenadas(double lat, double lng)
+    {
+        // No se usa en modo lectura, pero el m�todo debe existir por el contrato de inicializarMapa
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (objRef != null)
+        {
+            await JSRuntime.InvokeVoidAsync("destruirMapa", "mapaDetalle");
+            objRef.Dispose();
+        }
+    }
+
+    private void IrAEditar()
+    {
+        NavigationManager.NavigateTo($"/propiedades/registrar/{Id}");
+    }
+
+    private void Volver()
+    {
+        NavigationManager.NavigateTo("/propiedades");
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Disponible" => "bg-success",
+            "Vendida" => "bg-danger",
+            "Reservada" => "bg-warning text-dark",
+            "Alquilada" => "bg-info text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string ObtenerClaseEstadoVisita(string estado)
+    {
+        return estado switch
+        {
+            "Programada" => "bg-warning text-dark",
+            "Realizada" => "bg-success",
+            "Cancelada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private bool PuedeEditar()
+    {
+        return ServicioAutenticacion.EsAdmin ||
+               propiedad?.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador;
+    }
+}

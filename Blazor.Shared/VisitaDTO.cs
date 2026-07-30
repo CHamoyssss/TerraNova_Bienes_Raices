@@ -1,4 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Blazor.Shared
 {
@@ -14,17 +20,15 @@ namespace Blazor.Shared
 
         public DateTime FechaVisita { get; set; }
 
-        public string? Estado { get; set; }
+        [Required(ErrorMessage = "El estado es obligatorio")]
+        public string Estado { get; set; } = "Programada";
 
-        public string? Comentarios { get; set; }
+        public string Comentarios { get; set; } = string.Empty;
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public ClienteDTO? IdClienteNavigation { get; set; }
+        public virtual ClienteDTO? IdClienteNavigation { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public PropiedadDTO? IdPropiedadNavigation { get; set; }
+        public virtual PropiedadDTO? IdPropiedadNavigation { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public TrabajadorDTO? IdTrabajadorNavigation { get; set; }
+        public virtual TrabajadorDTO? IdTrabajadorNavigation { get; set; }
     }
 }

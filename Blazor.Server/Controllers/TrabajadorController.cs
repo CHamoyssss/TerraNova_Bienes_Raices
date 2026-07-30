@@ -37,6 +37,8 @@ namespace Blazor.Server.Controllers
                         Email = Trabajador.Email,
                         PorcentajeComision = Trabajador.PorcentajeComision,
                         FechaContratacion = Trabajador.FechaContratacion.ToDateTime(TimeOnly.MinValue),
+                        FotoUrl = Trabajador.FotoUrl,
+                        FechaNacimiento = Trabajador.FechaNacimiento?.ToDateTime(TimeOnly.MinValue),
                         Activo = Trabajador.Activo
                     });
                 }
@@ -77,6 +79,8 @@ namespace Blazor.Server.Controllers
                         Email = Trabajador.Email,
                         PorcentajeComision = Trabajador.PorcentajeComision,
                         FechaContratacion = Trabajador.FechaContratacion.ToDateTime(TimeOnly.MinValue),
+                        FotoUrl = Trabajador.FotoUrl,
+                        FechaNacimiento = Trabajador.FechaNacimiento?.ToDateTime(TimeOnly.MinValue),
                         Activo = Trabajador.Activo
                     });
                 }
@@ -109,6 +113,8 @@ namespace Blazor.Server.Controllers
                     Email = ObjTrabajador.Email,
                     PorcentajeComision = ObjTrabajador.PorcentajeComision,
                     FechaContratacion = DateOnly.FromDateTime(ObjTrabajador.FechaContratacion),
+                    FotoUrl = ObjTrabajador.FotoUrl,
+                    FechaNacimiento = ObjTrabajador.FechaNacimiento.HasValue ? DateOnly.FromDateTime(ObjTrabajador.FechaNacimiento.Value) : null,
                     Activo = ObjTrabajador.Activo
                 };
                 Contexto.Trabajadores.Add(DatosTrabajador);
@@ -185,6 +191,8 @@ namespace Blazor.Server.Controllers
                     TrabajadorBuscado.Email = TrabajadorBd.Email;
                     TrabajadorBuscado.PorcentajeComision = TrabajadorBd.PorcentajeComision;
                     TrabajadorBuscado.FechaContratacion = TrabajadorBd.FechaContratacion.ToDateTime(TimeOnly.MinValue);
+                    TrabajadorBuscado.FotoUrl = TrabajadorBd.FotoUrl;
+                    TrabajadorBuscado.FechaNacimiento = TrabajadorBd.FechaNacimiento?.ToDateTime(TimeOnly.MinValue);
                     TrabajadorBuscado.Activo = TrabajadorBd.Activo;
 
                     RespuestaApi.EsCorrecto = true;
@@ -223,6 +231,8 @@ namespace Blazor.Server.Controllers
                     TrabajadorBd.Email = NuevosDatos.Email;
                     TrabajadorBd.PorcentajeComision = NuevosDatos.PorcentajeComision;
                     TrabajadorBd.FechaContratacion = DateOnly.FromDateTime(NuevosDatos.FechaContratacion);
+                    TrabajadorBd.FotoUrl = NuevosDatos.FotoUrl;
+                    TrabajadorBd.FechaNacimiento = NuevosDatos.FechaNacimiento.HasValue ? DateOnly.FromDateTime(NuevosDatos.FechaNacimiento.Value) : null;
                     TrabajadorBd.Activo = NuevosDatos.Activo;
 
                     Contexto.Trabajadores.Update(TrabajadorBd);

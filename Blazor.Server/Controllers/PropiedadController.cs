@@ -48,7 +48,9 @@ namespace Blazor.Server.Controllers;
                         ImagenUrl = Propiedad.ImagenUrl,
                         IdTrabajador = Propiedad.IdTrabajador,
                         FechaPublicacion = Propiedad.FechaPublicacion,
-                        NombreTrabajador = Propiedad.IdTrabajadorNavigation.Nombre + " " + Propiedad.IdTrabajadorNavigation.Apellido
+                        NombreTrabajador = Propiedad.IdTrabajadorNavigation.Nombre + " " + Propiedad.IdTrabajadorNavigation.Apellido,
+                        Latitud = Propiedad.Latitud,
+                        Longitud = Propiedad.Longitud
                     });
                 }
                 RespuestaApi.EsCorrecto = true;
@@ -96,7 +98,9 @@ namespace Blazor.Server.Controllers;
                         ImagenUrl = Propiedad.ImagenUrl,
                         IdTrabajador = Propiedad.IdTrabajador,
                         FechaPublicacion = Propiedad.FechaPublicacion,
-                        NombreTrabajador = Propiedad.IdTrabajadorNavigation.Nombre + " " + Propiedad.IdTrabajadorNavigation.Apellido
+                        NombreTrabajador = Propiedad.IdTrabajadorNavigation.Nombre + " " + Propiedad.IdTrabajadorNavigation.Apellido,
+                        Latitud = Propiedad.Latitud,
+                        Longitud = Propiedad.Longitud
                     });
                 }
                 RespuestaApi.EsCorrecto = true;
@@ -142,6 +146,8 @@ namespace Blazor.Server.Controllers;
                     PropiedadBuscada.IdTrabajador = PropiedadBd.IdTrabajador;
                     PropiedadBuscada.FechaPublicacion = PropiedadBd.FechaPublicacion;
                     PropiedadBuscada.NombreTrabajador = PropiedadBd.IdTrabajadorNavigation.Nombre + " " + PropiedadBd.IdTrabajadorNavigation.Apellido;
+                    PropiedadBuscada.Latitud = PropiedadBd.Latitud;
+                    PropiedadBuscada.Longitud = PropiedadBd.Longitud;
 
                     RespuestaApi.EsCorrecto = true;
                     RespuestaApi.Valor = PropiedadBuscada;
@@ -183,7 +189,9 @@ namespace Blazor.Server.Controllers;
                 Descripcion = ObjPropiedad.Descripcion,
                 ImagenUrl = ObjPropiedad.ImagenUrl,
                 IdTrabajador = ObjPropiedad.IdTrabajador,
-                FechaPublicacion = ObjPropiedad.FechaPublicacion
+                FechaPublicacion = ObjPropiedad.FechaPublicacion,
+                Latitud = ObjPropiedad.Latitud,
+                Longitud = ObjPropiedad.Longitud
             };
             Contexto.Propiedades.Add(DatosPropiedad);
             await Contexto.SaveChangesAsync();
@@ -231,6 +239,8 @@ namespace Blazor.Server.Controllers;
                 PropiedadBd.Descripcion = NuevosDatos.Descripcion;
                 PropiedadBd.ImagenUrl = NuevosDatos.ImagenUrl;
                 PropiedadBd.IdTrabajador = NuevosDatos.IdTrabajador;
+                PropiedadBd.Latitud = NuevosDatos.Latitud;
+                PropiedadBd.Longitud = NuevosDatos.Longitud;
 
                 Contexto.Propiedades.Update(PropiedadBd);
                 await Contexto.SaveChangesAsync();
@@ -248,6 +258,48 @@ namespace Blazor.Server.Controllers;
         {
             RespuestaApi.EsCorrecto = false;
             RespuestaApi.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
+        }
+        return Ok(RespuestaApi);
+    }
+
+    [HttpDelete]
+    [Route("Eliminar/{Cod}")]
+    public async Task<IActionResult> Eliminar(int Cod)
+    {
+        var RespuestaApi = new ResponseAPI<int>();
+        try
+        {
+            var propiedad = await Contexto.Propiedades
+                .Include(p => p.Venta)
+                .Include(p => p.Visita)
+                .FirstOrDefaultAsync(p => p.Id == Cod);
+
+            if (propiedad != null)
+            {
+                if (propiedad.Venta.Any() || propiedad.Visita.Any())
+                {
+                    RespuestaApi.EsCorrecto = false;
+                    RespuestaApi.Mensaje = "No se puede eliminar la propiedad porque tiene ventas o visitas asociadas.";
+                }
+                else
+                {
+                    Contexto.Propiedades.Remove(propiedad);
+                    await Contexto.SaveChangesAsync();
+                    RespuestaApi.EsCorrecto = true;
+                    RespuestaApi.Valor = Cod;
+                    RespuestaApi.Mensaje = "Propiedad eliminada correctamente";
+                }
+            }
+            else
+            {
+                RespuestaApi.EsCorrecto = false;
+                RespuestaApi.Mensaje = "Propiedad no encontrada";
+            }
+        }
+        catch (Exception ex)
+        {
+            RespuestaApi.EsCorrecto = false;
+            RespuestaApi.Mensaje = ex.Message;
         }
         return Ok(RespuestaApi);
     }

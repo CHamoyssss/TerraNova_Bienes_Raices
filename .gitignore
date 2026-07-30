@@ -44,3 +44,11 @@ node_modules/
 
 ## Config
 appsettings.*.local.json
+
+## Playwright
+playwright-report/
+test-results/
+.playwright-mcp/
+
+## OpenCode / OMO
+.omo/
