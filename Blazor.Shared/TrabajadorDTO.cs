@@ -35,6 +35,10 @@ namespace Blazor.Shared
 
         public DateTime FechaContratacion { get; set; }
 
+        public string? FotoUrl { get; set; }
+
+        public DateTime? FechaNacimiento { get; set; }
+
         public bool Activo { get; set; }
 
         public virtual ICollection<PropiedadDTO> Propiedades { get; set; } = new List<PropiedadDTO>();

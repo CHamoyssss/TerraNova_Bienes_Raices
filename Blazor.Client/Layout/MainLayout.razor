@@ -1,7 +1,6 @@
 @inherits LayoutComponentBase
 @inject ServicioAutenticacion ServicioAutenticacion
 @inject NavigationManager NavigationManager
-
 @if (verificando)
 {
     <div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
@@ -77,6 +76,8 @@ else
         </main>
     </div>
 }
+
+<ToastNotificacion />
 
 @code {
     private bool verificando = true;

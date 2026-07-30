@@ -1,6 +1,8 @@
-﻿@page "/ventas"
+@page "/ventas"
 @inject ServicioVentas ServicioVentas
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>Ventas</PageTitle>
 
@@ -16,6 +18,12 @@
         </button>
     </div>
 
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <input type="text" class="form-control w-50"
+               placeholder="Buscar por cliente, propiedad o agente..."
+               @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+    </div>
+
     @if (cargando)
     {
         <div class="text-center my-5">
@@ -28,7 +36,7 @@
     {
         <div class="alert alert-danger">@mensajeError</div>
     }
-    else if (!ventas.Any())
+    else if (!ventasFiltradas.Any())
     {
         <div class="alert alert-info">No se registraron ventas todavía.</div>
     }
@@ -51,7 +59,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var venta in ventas)
+                        @foreach (var venta in ventasFiltradas)
                         {
                             <tr>
                                 <td>@venta.Fecha.ToString("dd/MM/yyyy")</td>
@@ -65,6 +73,9 @@
                                     <span class="badge @ObtenerClaseEstado(venta.Estado)">@venta.Estado</span>
                                 </td>
                                 <td>
+                                    <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAModificar(venta.Id)">
+                                        <i class="bi bi-pencil"></i> Modificar
+                                    </button>
                                     <button class="btn btn-sm btn-danger" @onclick="() => MostrarConfirmacion(venta.Id)">
                                         <i class="bi bi-x-circle"></i> Cancelar
                                     </button>
@@ -108,6 +119,8 @@
 
 @code {
     private List<VentaDTO> ventas = new();
+    private List<VentaDTO> ventasFiltradas = new();
+    private string textoBusqueda = string.Empty;
     private bool cargando = true;
     private string? mensajeError;
     private bool mostrarModalConfirmacion = false;
@@ -125,9 +138,11 @@
         try
         {
             ventas = await ServicioVentas.Lista();
+            ventasFiltradas = ventas;
         }
         catch (Exception ex)
         {
+            ToastService.ShowError("Error al cargar ventas");
             mensajeError = "No se pudo cargar la lista de ventas: " + ex.Message;
         }
         finally
@@ -136,9 +151,32 @@
         }
     }
 
+    private void Filtrar()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            ventasFiltradas = ventas;
+        }
+        else
+        {
+            var texto = textoBusqueda.ToLower();
+            ventasFiltradas = ventas.Where(v =>
+                (v.IdClienteNavigation?.Nombre?.ToLower().Contains(texto) ?? false) ||
+                (v.IdClienteNavigation?.Apellido?.ToLower().Contains(texto) ?? false) ||
+                (v.IdPropiedadNavigation?.Titulo?.ToLower().Contains(texto) ?? false) ||
+                (v.IdTrabajadorNavigation?.Nombre?.ToLower().Contains(texto) ?? false) ||
+                (v.IdTrabajadorNavigation?.Apellido?.ToLower().Contains(texto) ?? false)).ToList();
+        }
+    }
+
     private void IrARegistrar()
     {
         NavigationManager.NavigateTo("/ventas/registrar");
+    }
+
+    private void IrAModificar(int id)
+    {
+        NavigationManager.NavigateTo($"/ventas/registrar/{id}");
     }
 
     private void MostrarConfirmacion(int id)
@@ -158,10 +196,12 @@
         try
         {
             await ServicioVentas.Eliminar(idAEliminar);
+            ToastService.ShowSuccess("Venta cancelada correctamente");
             await CargarVentas();
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo cancelar la venta: {ex.Message}");
             mensajeError = "No se pudo cancelar la venta: " + ex.Message;
         }
     }

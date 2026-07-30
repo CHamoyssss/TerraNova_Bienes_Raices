@@ -1,0 +1,56 @@
+@inject Services.ToastService ToastService
+
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="toast show align-items-center text-bg-@tipoBs border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body fw-medium">
+                    <i class="bi @icono me-2"></i> @mensaje
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="Cerrar"></button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string mensaje = string.Empty;
+    private string tipoBs = "success";
+    private string icono = "bi-check-circle-fill";
+    private Timer? timer;
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += Mostrar;
+    }
+
+    private void Mostrar(Services.ToastLevel level, string msg)
+    {
+        mensaje = msg;
+        (tipoBs, icono) = level switch
+        {
+            Services.ToastLevel.Success => ("success", "bi-check-circle-fill"),
+            Services.ToastLevel.Error => ("danger", "bi-x-circle-fill"),
+            Services.ToastLevel.Warning => ("warning", "bi-exclamation-triangle-fill"),
+            Services.ToastLevel.Info => ("info", "bi-info-circle-fill"),
+            _ => ("secondary", "bi-bell-fill")
+        };
+        InvokeAsync(StateHasChanged);
+        timer?.Dispose();
+        timer = new Timer(_ => { mensaje = string.Empty; InvokeAsync(StateHasChanged); }, null, 4000, Timeout.Infinite);
+    }
+
+    private void Cerrar()
+    {
+        mensaje = string.Empty;
+        timer?.Dispose();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= Mostrar;
+        timer?.Dispose();
+    }
+}

@@ -29,6 +29,37 @@
                     <div class="alert alert-danger">@mensajeError</div>
                 }
 
+                <div class="d-flex align-items-center mb-4">
+                    <div class="foto-preview-wrapper me-3">
+                        @if (!string.IsNullOrWhiteSpace(fotoPreview))
+                        {
+                            <img src="@fotoPreview" class="foto-preview" alt="Foto del trabajador" />
+                        }
+                        else
+                        {
+                            <div class="foto-preview-placeholder">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        }
+                    </div>
+                    <div>
+                        <InputFile OnChange="CargarFoto" class="d-none" id="inputFoto" accept="image/*" />
+                        <label for="inputFoto" class="btn btn-outline-primary">
+                            <i class="bi bi-camera"></i> @(string.IsNullOrWhiteSpace(fotoPreview) ? "Subir foto" : "Cambiar foto")
+                        </label>
+                        @if (!string.IsNullOrWhiteSpace(fotoPreview))
+                        {
+                            <button type="button" class="btn btn-outline-danger ms-2" @onclick="QuitarFoto">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        }
+                        @if (errorFoto != null)
+                        {
+                            <div class="text-danger small mt-1">@errorFoto</div>
+                        }
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Nombre</label>
@@ -94,6 +125,32 @@
     </div>
 </div>
 
+<style>
+    .foto-preview-wrapper {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: #f1f1f1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #dee2e6;
+    }
+
+    .foto-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .foto-preview-placeholder {
+        font-size: 2.5rem;
+        color: #adb5bd;
+    }
+</style>
+
 @code {
     [Parameter]
     public int? Id { get; set; }
@@ -103,6 +160,10 @@
     private bool cargando = false;
     private bool guardando = false;
     private string? mensajeError;
+    private string? errorFoto;
+    private string? fotoPreview;
+
+    private const long TamanoMaximoFoto = 2 * 1024 * 1024; // 2 MB
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,6 +173,7 @@
             try
             {
                 trabajador = await ServicioTrabajadores.Buscar(Id!.Value);
+                fotoPreview = trabajador.FotoUrl;
             }
             catch (Exception ex)
             {
@@ -122,6 +184,42 @@
                 cargando = false;
             }
         }
+    }
+
+    private async Task CargarFoto(InputFileChangeEventArgs e)
+    {
+        errorFoto = null;
+        try
+        {
+            var archivo = e.File;
+
+            if (archivo.Size > TamanoMaximoFoto)
+            {
+                errorFoto = "La imagen no debe superar los 2 MB.";
+                return;
+            }
+
+            using var stream = archivo.OpenReadStream(TamanoMaximoFoto);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+
+            var bytes = memoryStream.ToArray();
+            var base64 = Convert.ToBase64String(bytes);
+            var mimeType = archivo.ContentType;
+
+            fotoPreview = $"data:{mimeType};base64,{base64}";
+            trabajador.FotoUrl = fotoPreview;
+        }
+        catch (Exception ex)
+        {
+            errorFoto = "No se pudo cargar la imagen: " + ex.Message;
+        }
+    }
+
+    private void QuitarFoto()
+    {
+        fotoPreview = null;
+        trabajador.FotoUrl = null;
     }
 
     private async Task Guardar()

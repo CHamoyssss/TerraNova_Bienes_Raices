@@ -1,7 +1,9 @@
-﻿@page "/usuarios"
+@page "/usuarios"
 @inject ServicioUsuarios ServicioUsuarios
 @inject ServicioAutenticacion ServicioAutenticacion
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>Usuarios</PageTitle>
 
@@ -144,6 +146,7 @@
         }
         catch (Exception ex)
         {
+            ToastService.ShowError("Error al cargar usuarios");
             mensajeError = "No se pudo cargar la lista de usuarios: " + ex.Message;
         }
         finally
@@ -180,10 +183,12 @@
         try
         {
             await ServicioUsuarios.Eliminar(idAEliminar);
+            ToastService.ShowSuccess("Usuario dado de baja correctamente");
             usuarios = await ServicioUsuarios.Lista();
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo dar de baja: {ex.Message}");
             mensajeError = "No se pudo dar de baja: " + ex.Message;
         }
     }

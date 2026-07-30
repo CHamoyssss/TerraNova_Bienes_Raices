@@ -1,6 +1,8 @@
-﻿@page "/clientes"
+@page "/clientes"
 @inject ServicioClientes ServicioClientes
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 
 <PageTitle>Clientes</PageTitle>
 
@@ -136,6 +138,7 @@
         }
         catch (Exception ex)
         {
+            ToastService.ShowError("Error al cargar clientes");
             mensajeError = "No se pudo cargar la lista de clientes: " + ex.Message;
         }
         finally
@@ -187,10 +190,12 @@
         try
         {
             await ServicioClientes.Eliminar(idAEliminar);
+            ToastService.ShowSuccess("Cliente eliminado correctamente");
             await CargarClientes();
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo eliminar: {ex.Message}");
             mensajeError = "No se pudo eliminar: " + ex.Message;
         }
     }

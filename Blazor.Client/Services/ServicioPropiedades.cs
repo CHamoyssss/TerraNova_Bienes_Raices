@@ -43,6 +43,13 @@ namespace Blazor.Client.Services
         public async Task<int> Guardar(PropiedadDTO ObjPropiedad)
         {
             var Resultado = await Http.PostAsJsonAsync("api/Propiedad/Guardar", ObjPropiedad);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
             if (Respuesta != null && Respuesta.EsCorrecto)
             {
@@ -84,6 +91,13 @@ namespace Blazor.Client.Services
         public async Task<int> Modificar(PropiedadDTO NuevosDatos)
         {
             var Resultado = await Http.PutAsJsonAsync($"api/Propiedad/Modificar/{NuevosDatos.Id}", NuevosDatos);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
             var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
             if (Respuesta != null && Respuesta.EsCorrecto)
             {

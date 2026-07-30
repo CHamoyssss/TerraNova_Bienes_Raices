@@ -74,6 +74,25 @@ namespace Blazor.Client.Services
             }
         }
 
+        public async Task<int> Modificar(VentaDTO NuevosDatos)
+        {
+            var Resultado = await Http.PutAsJsonAsync($"api/Venta/Modificar/{NuevosDatos.Id}", NuevosDatos);
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+            var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
+            if (Respuesta != null && Respuesta.EsCorrecto)
+            {
+                return Respuesta.Valor;
+            }
+            else
+            {
+                throw new Exception(Respuesta?.Mensaje ?? "Error al modificar la venta");
+            }
+        }
+
         public async Task<List<VentaDTO>> PorCliente(int idCliente)
         {
             var Resultado = await Http.GetFromJsonAsync<ResponseAPI<List<VentaDTO>>>($"api/Venta/PorCliente/{idCliente}");

@@ -23,6 +23,10 @@ public partial class Trabajador
 
     public DateOnly FechaContratacion { get; set; }
 
+    public string? FotoUrl { get; set; }
+
+    public DateOnly? FechaNacimiento { get; set; }
+
     public bool Activo { get; set; }
 
     public virtual ICollection<Propiedad> Propiedades { get; set; } = new List<Propiedad>();

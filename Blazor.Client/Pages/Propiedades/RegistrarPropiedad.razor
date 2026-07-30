@@ -3,6 +3,8 @@
 @inject ServicioPropiedades ServicioPropiedades
 @inject ServicioTrabajadores ServicioTrabajadores
 @inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
 @inject ServicioAutenticacion ServicioAutenticacion
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
@@ -241,16 +243,19 @@
             if (esEdicion)
             {
                 await ServicioPropiedades.Modificar(propiedad);
+                ToastService.ShowSuccess("Propiedad actualizada correctamente");
             }
             else
             {
                 await ServicioPropiedades.Guardar(propiedad);
+                ToastService.ShowSuccess("Propiedad registrada correctamente");
             }
 
             NavigationManager.NavigateTo("/propiedades");
         }
         catch (Exception ex)
         {
+            ToastService.ShowError($"No se pudo guardar la propiedad: {ex.Message}");
             mensajeError = "No se pudo guardar: " + ex.Message;
         }
         finally
