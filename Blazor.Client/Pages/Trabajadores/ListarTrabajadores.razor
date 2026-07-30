@@ -1,7 +1,6 @@
 ﻿@page "/trabajadores"
 @inject ServicioTrabajadores ServicioTrabajadores
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Trabajadores</PageTitle>
 
@@ -84,7 +83,7 @@
                                     </button>
                                     @if (trabajador.Activo)
                                     {
-                                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarBaja(trabajador.Id)">
+                                        <button class="btn btn-sm btn-danger" @onclick="() => MostrarConfirmacion(trabajador.Id)">
                                             <i class="bi bi-person-dash"></i>Eliminar
                                         </button>
                                     }
@@ -98,12 +97,42 @@
     }
 </div>
 
+@if (mostrarModalConfirmacion)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar Baja
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="bi bi-person-dash text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fw-medium">¿Esta seguro que desea dar de baja a este trabajador?</p>
+                    <p class="text-muted small mb-0">Esta accion no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button class="btn btn-secondary px-4" @onclick="CancelarEliminacion">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button class="btn btn-danger px-4" @onclick="EliminarRegistro">
+                        <i class="bi bi-check-lg"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<TrabajadorDTO> trabajadores = new();
     private List<TrabajadorDTO> trabajadoresFiltrados = new();
     private string textoBusqueda = string.Empty;
     private bool cargando = true;
     private string? mensajeError;
+    private bool mostrarModalConfirmacion = false;
+    private int idAEliminar;
 
     protected override async Task OnInitializedAsync()
     {
@@ -155,20 +184,28 @@
         NavigationManager.NavigateTo($"/trabajadores/registrar/{id}");
     }
 
-    private async Task ConfirmarBaja(int id)
+    private void MostrarConfirmacion(int id)
     {
-        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea dar de baja a este trabajador?");
-        if (confirmado)
+        idAEliminar = id;
+        mostrarModalConfirmacion = true;
+    }
+
+    private void CancelarEliminacion()
+    {
+        mostrarModalConfirmacion = false;
+    }
+
+    private async Task EliminarRegistro()
+    {
+        mostrarModalConfirmacion = false;
+        try
         {
-            try
-            {
-                await ServicioTrabajadores.Eliminar(id);
-                await CargarTrabajadores();
-            }
-            catch (Exception ex)
-            {
-                mensajeError = "No se pudo dar de baja: " + ex.Message;
-            }
+            await ServicioTrabajadores.Eliminar(idAEliminar);
+            await CargarTrabajadores();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo dar de baja: " + ex.Message;
         }
     }
 }
