@@ -46,7 +46,7 @@ namespace Blazor.Server.Controllers
             catch (Exception ex)
             {
                 RespuestaApi.EsCorrecto = false;
-                RespuestaApi.Mensaje = ex.Message;
+                RespuestaApi.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
             }
             return Ok(RespuestaApi);
         }
@@ -86,7 +86,7 @@ namespace Blazor.Server.Controllers
             catch (Exception ex)
             {
                 RespuestaAPI.EsCorrecto = false;
-                RespuestaAPI.Mensaje = ex.Message;
+                RespuestaAPI.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
             }
             return Ok(RespuestaAPI);
         }
@@ -126,7 +126,7 @@ namespace Blazor.Server.Controllers
             catch (Exception ex)
             {
                 RespuestaApi.EsCorrecto = false;
-                RespuestaApi.Mensaje = ex.Message;
+                RespuestaApi.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
             }
             return Ok(RespuestaApi);
         }
@@ -164,7 +164,7 @@ namespace Blazor.Server.Controllers
             catch (Exception ex)
             {
                 RespuestaApi.EsCorrecto = false;
-                RespuestaApi.Mensaje = ex.Message;
+                RespuestaApi.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
             }
             return Ok(RespuestaApi);
         }
@@ -203,7 +203,7 @@ namespace Blazor.Server.Controllers
             catch (Exception ex)
             {
                 RespuestaApi.EsCorrecto = false;
-                RespuestaApi.Mensaje = ex.Message;
+                RespuestaApi.Mensaje = $"{ex.Message} | {ex.InnerException?.Message}";
             }
             return Ok(RespuestaApi);
         }

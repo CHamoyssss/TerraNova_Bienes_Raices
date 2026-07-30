@@ -1,7 +1,6 @@
 ﻿@page "/ventas"
 @inject ServicioVentas ServicioVentas
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
 
 <PageTitle>Ventas</PageTitle>
 
@@ -66,7 +65,7 @@
                                     <span class="badge @ObtenerClaseEstado(venta.Estado)">@venta.Estado</span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(venta.Id)">
+                                    <button class="btn btn-sm btn-danger" @onclick="() => MostrarConfirmacion(venta.Id)">
                                         <i class="bi bi-x-circle"></i> Cancelar
                                     </button>
                                 </td>
@@ -79,10 +78,40 @@
     }
 </div>
 
+@if (mostrarModalConfirmacion)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>Cancelar Venta
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="bi bi-x-circle text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fw-medium">¿Cancelar esta venta?</p>
+                    <p class="text-muted small mb-0">La propiedad volvera a estar Disponible.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button class="btn btn-secondary px-4" @onclick="CancelarEliminacion">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button class="btn btn-danger px-4" @onclick="EliminarRegistro">
+                        <i class="bi bi-check-lg"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<VentaDTO> ventas = new();
     private bool cargando = true;
     private string? mensajeError;
+    private bool mostrarModalConfirmacion = false;
+    private int idAEliminar;
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,20 +141,28 @@
         NavigationManager.NavigateTo("/ventas/registrar");
     }
 
-    private async Task ConfirmarEliminar(int id)
+    private void MostrarConfirmacion(int id)
     {
-        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Cancelar esta venta? La propiedad volverá a estar Disponible.");
-        if (confirmado)
+        idAEliminar = id;
+        mostrarModalConfirmacion = true;
+    }
+
+    private void CancelarEliminacion()
+    {
+        mostrarModalConfirmacion = false;
+    }
+
+    private async Task EliminarRegistro()
+    {
+        mostrarModalConfirmacion = false;
+        try
         {
-            try
-            {
-                await ServicioVentas.Eliminar(id);
-                await CargarVentas();
-            }
-            catch (Exception ex)
-            {
-                mensajeError = "No se pudo cancelar la venta: " + ex.Message;
-            }
+            await ServicioVentas.Eliminar(idAEliminar);
+            await CargarVentas();
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cancelar la venta: " + ex.Message;
         }
     }
 
