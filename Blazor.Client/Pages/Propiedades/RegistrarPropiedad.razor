@@ -1,0 +1,271 @@
+@page "/propiedades/registrar"
+@page "/propiedades/registrar/{Id:int}"
+@inject ServicioPropiedades ServicioPropiedades
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>@(esEdicion ? "Editar Propiedad" : "Nueva Propiedad")</PageTitle>
+
+<div class="dashboard-container">
+    <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Propiedad" : "Registrar Nueva Propiedad")</h2>
+
+    <div class="panel-card shadow-sm p-4">
+        @if (sinPermiso)
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-shield-lock"></i> No tienes permiso para editar esta propiedad &mdash; pertenece a otro agente.
+            </div>
+        }
+        else if (cargando)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="propiedad" OnValidSubmit="Guardar">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                @if (mensajeError != null)
+                {
+                    <div class="alert alert-danger">@mensajeError</div>
+                }
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Título</label>
+                        <InputText class="form-control" @bind-Value="propiedad.Titulo" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tipo</label>
+                        <InputSelect class="form-select" @bind-Value="propiedad.Tipo">
+                            <option value="Casa">Casa</option>
+                            <option value="Departamento">Departamento</option>
+                            <option value="Terreno">Terreno</option>
+                            <option value="Oficina">Oficina</option>
+                            <option value="Local">Local</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Dirección</label>
+                        <InputText class="form-control" @bind-Value="propiedad.Direccion" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Zona</label>
+                        <InputText class="form-control" @bind-Value="propiedad.Zona" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Precio ($.)</label>
+                        <InputNumber class="form-control" @bind-Value="propiedad.Precio" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Área (m²)</label>
+                        <InputNumber class="form-control" @bind-Value="propiedad.AreaM2" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Tipo Operación</label>
+                        <InputSelect class="form-select" @bind-Value="propiedad.TipoOperacion">
+                            <option value="Venta">Venta</option>
+                            <option value="Alquiler">Alquiler</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Estado</label>
+                        <InputSelect class="form-select" @bind-Value="propiedad.Estado">
+                            <option value="Disponible">Disponible</option>
+                            <option value="Reservada">Reservada</option>
+                            <option value="Vendida">Vendida</option>
+                            <option value="Alquilada">Alquilada</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Habitaciones</label>
+                        <InputNumber class="form-control" @bind-Value="propiedad.Habitaciones" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Baños</label>
+                        <InputNumber class="form-control" @bind-Value="propiedad.Banios" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Garajes</label>
+                        <InputNumber class="form-control" @bind-Value="propiedad.Garajes" />
+                    </div>
+                </div>
+
+                @if (ServicioAutenticacion.EsAdmin)
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Agente asignado</label>
+                        <InputSelect class="form-select" @bind-Value="propiedad.IdTrabajador">
+                            <option value="0">-- Seleccione un agente --</option>
+                            @foreach (var trabajador in trabajadores)
+                            {
+                                <option value="@trabajador.Id">@trabajador.Nombre @trabajador.Apellido (@trabajador.Cargo)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <InputTextArea class="form-control" rows="3" @bind-Value="propiedad.Descripcion" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">URL de imagen</label>
+                    <InputText class="form-control" @bind-Value="propiedad.ImagenUrl" placeholder="https://..." />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Ubicación en el mapa (haz clic para marcar)</label>
+                    <div id="mapaPropiedad" style="height: 350px; border-radius: 8px;"></div>
+                    @if (propiedad.Latitud.HasValue && propiedad.Longitud.HasValue)
+                    {
+                        <small class="text-muted">
+                            Lat: @propiedad.Latitud?.ToString("F6") | Lng: @propiedad.Longitud?.ToString("F6")
+                        </small>
+                    }
+                    else
+                    {
+                        <small class="text-muted">Aún no se ha marcado ninguna ubicación.</small>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-success me-2" disabled="@guardando">
+                    <i class="bi bi-check-circle"></i>
+                    @(guardando ? "Guardando..." : (esEdicion ? "Actualizar" : "Guardar"))
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                    Cancelar
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private PropiedadDTO propiedad = new() { Estado = "Disponible", TipoOperacion = "Venta", FechaPublicacion = DateTime.Now };
+    private List<TrabajadorDTO> trabajadores = new();
+    private bool esEdicion => Id.HasValue;
+    private bool cargando = true;
+    private bool guardando = false;
+    private string? mensajeError;
+    private bool sinPermiso = false;
+
+    private DotNetObjectReference<RegistrarPropiedad>? objRef;
+    private bool mapaInicializado = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            trabajadores = await ServicioTrabajadores.Activos();
+
+            if (esEdicion)
+            {
+                propiedad = await ServicioPropiedades.Buscar(Id!.Value);
+
+                bool esPropia = propiedad.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador;
+                if (!ServicioAutenticacion.EsAdmin && !esPropia)
+                {
+                    sinPermiso = true;
+                }
+            }
+            else if (!ServicioAutenticacion.EsAdmin)
+            {
+                propiedad.IdTrabajador = ServicioAutenticacion.UsuarioActual?.IdTrabajador ?? 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudieron cargar los datos: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!cargando && !mapaInicializado && !sinPermiso)
+        {
+            mapaInicializado = true;
+            objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("inicializarMapa", "mapaPropiedad", propiedad.Latitud, propiedad.Longitud, objRef);
+        }
+    }
+
+    [JSInvokable]
+    public void ActualizarCoordenadas(double lat, double lng)
+    {
+        propiedad.Latitud = lat;
+        propiedad.Longitud = lng;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (objRef != null)
+        {
+            await JSRuntime.InvokeVoidAsync("destruirMapa", "mapaPropiedad");
+            objRef.Dispose();
+        }
+    }
+
+    private async Task Guardar()
+    {
+        mensajeError = null;
+        guardando = true;
+        try
+        {
+            if (esEdicion)
+            {
+                await ServicioPropiedades.Modificar(propiedad);
+                ToastService.ShowSuccess("Propiedad actualizada correctamente");
+            }
+            else
+            {
+                await ServicioPropiedades.Guardar(propiedad);
+                ToastService.ShowSuccess("Propiedad registrada correctamente");
+            }
+
+            NavigationManager.NavigateTo("/propiedades");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"No se pudo guardar la propiedad: {ex.Message}");
+            mensajeError = "No se pudo guardar: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/propiedades");
+    }
+}

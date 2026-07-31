@@ -1,0 +1,264 @@
+@page "/ventas/registrar"
+@page "/ventas/registrar/{Id:int}"
+@inject ServicioVentas ServicioVentas
+@inject ServicioClientes ServicioClientes
+@inject ServicioPropiedades ServicioPropiedades
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
+
+<PageTitle>@(esEdicion ? "Editar Venta" : "Nueva Venta")</PageTitle>
+
+<div class="dashboard-container">
+    <h2 class="fw-bold mb-4">@(esEdicion ? "Editar Venta" : "Registrar Nueva Venta")</h2>
+
+    <div class="panel-card shadow-sm p-4">
+
+        @if (cargando)
+        {
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <EditForm Model="venta" OnValidSubmit="Guardar">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                @if (mensajeError != null)
+                {
+                    <div class="alert alert-danger">@mensajeError</div>
+                }
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Cliente</label>
+                        <select class="form-select" @onchange="OnClienteChanged">
+                            <option value="0">-- Seleccione un cliente --</option>
+                            @foreach (var cliente in clientes)
+                            {
+                                <option value="@cliente.Id" selected="@(venta.IdCliente == cliente.Id)">
+                                    @cliente.Nombre @cliente.Apellido - CI: @cliente.Ci
+                                </option>
+                            }
+                        </select>
+                        @if (clienteSeleccionado != null)
+                        {
+                            <div class="alert alert-light border mt-2 py-2 px-3 mb-0">
+                                <small>
+                                    <strong>Tel:</strong> @clienteSeleccionado.Telefono |
+                                    <strong>Email:</strong> @clienteSeleccionado.Email
+                                </small>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Propiedad Disponible</label>
+                        <select class="form-select" @onchange="OnPropiedadChanged">
+                            <option value="0">-- Seleccione una propiedad --</option>
+                            @foreach (var prop in propiedadesDisponibles)
+                            {
+                                <option value="@prop.Id" selected="@(venta.IdPropiedad == prop.Id)">
+                                    @prop.Titulo - @($"${prop.Precio:N0}")
+                                </option>
+                            }
+                        </select>
+                        @if (propiedadSeleccionada != null)
+                        {
+                            <div class="alert alert-light border mt-2 py-2 px-3 mb-0">
+                                <small>
+                                    @propiedadSeleccionada.Direccion, @propiedadSeleccionada.Zona
+                                </small>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Agente que gestiona la venta</label>
+                    <select class="form-select" @onchange="OnTrabajadorChanged">
+                        <option value="0">-- Seleccione un agente --</option>
+                        @foreach (var trabajador in trabajadores)
+                        {
+                            <option value="@trabajador.Id" selected="@(venta.IdTrabajador == trabajador.Id)">
+                                @trabajador.Nombre @trabajador.Apellido (@trabajador.PorcentajeComision%)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Monto ($)</label>
+                        <input type="text" class="form-control" value="@($"${venta.Monto:N0}")" readonly lang="es" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Comisión Generada ($)</label>
+                        <input type="text" class="form-control" value="@($"${venta.ComisionGenerada:N2}")" readonly />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Forma de Pago</label>
+                        <select class="form-select" @bind="venta.FormaPago">
+                            <option value="Contado">Contado</option>
+                            <option value="Crédito">Crédito</option>
+                            <option value="Financiado">Financiado</option>
+                            <option value="Alquiler">Alquiler</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <InputTextArea class="form-control" rows="2" @bind-Value="venta.Observaciones" />
+                </div>
+
+                <button type="submit" class="btn btn-success me-2" disabled="@guardando">
+                    <i class="bi bi-check-circle"></i>
+                    @(guardando ? "Guardando..." : (esEdicion ? "Actualizar Venta" : "Registrar Venta"))
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="Cancelar">
+                    Cancelar
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private VentaDTO venta = new() { Fecha = DateTime.Now, FormaPago = "Contado", Estado = "Completada" };
+    private List<ClienteDTO> clientes = new();
+    private List<PropiedadDTO> propiedadesDisponibles = new();
+    private List<TrabajadorDTO> trabajadores = new();
+
+    private ClienteDTO? clienteSeleccionado;
+    private PropiedadDTO? propiedadSeleccionada;
+    private bool esEdicion => Id.HasValue;
+
+    private bool cargando = true;
+    private bool guardando = false;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            clientes = await ServicioClientes.Lista();
+            propiedadesDisponibles = await ServicioPropiedades.Lista();
+            trabajadores = await ServicioTrabajadores.Activos();
+
+            if (esEdicion)
+            {
+                venta = await ServicioVentas.Buscar(Id!.Value);
+                clienteSeleccionado = clientes.FirstOrDefault(c => c.Id == venta.IdCliente);
+                propiedadSeleccionada = propiedadesDisponibles.FirstOrDefault(p => p.Id == venta.IdPropiedad);
+            }
+            else
+            {
+                propiedadesDisponibles = await ServicioPropiedades.Disponibles();
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudieron cargar los datos: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void OnClienteChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            venta.IdCliente = id;
+            clienteSeleccionado = clientes.FirstOrDefault(c => c.Id == id);
+        }
+    }
+
+    private void OnPropiedadChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            venta.IdPropiedad = id;
+            propiedadSeleccionada = propiedadesDisponibles.FirstOrDefault(p => p.Id == id);
+            if (propiedadSeleccionada != null)
+            {
+                venta.Monto = propiedadSeleccionada.Precio;
+                CalcularComision();
+            }
+        }
+    }
+
+    private void OnTrabajadorChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            venta.IdTrabajador = id;
+            CalcularComision();
+        }
+    }
+
+    private void CalcularComision()
+    {
+        var trabajador = trabajadores.FirstOrDefault(t => t.Id == venta.IdTrabajador);
+        if (trabajador != null)
+        {
+            venta.ComisionGenerada = decimal.Round(venta.Monto * (trabajador.PorcentajeComision / 100m), 2);
+        }
+        else
+        {
+            venta.ComisionGenerada = 0;
+        }
+        StateHasChanged();
+    }
+
+    private async Task Guardar()
+    {
+        mensajeError = null;
+
+        if (venta.IdCliente == 0 || venta.IdPropiedad == 0 || venta.IdTrabajador == 0)
+        {
+            mensajeError = "Debe seleccionar Cliente, Propiedad y Agente antes de guardar.";
+            return;
+        }
+
+        guardando = true;
+        try
+        {
+            if (esEdicion)
+            {
+                await ServicioVentas.Modificar(venta);
+                ToastService.ShowSuccess("Venta modificada correctamente");
+            }
+            else
+            {
+                await ServicioVentas.Guardar(venta);
+                ToastService.ShowSuccess("Venta registrada correctamente");
+            }
+            NavigationManager.NavigateTo("/ventas");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"No se pudo {(esEdicion ? "modificar" : "registrar")} la venta");
+            mensajeError = "No se pudo " + (esEdicion ? "modificar" : "registrar") + " la venta: " + ex.Message;
+        }
+        finally
+        {
+            guardando = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        NavigationManager.NavigateTo("/ventas");
+    }
+}

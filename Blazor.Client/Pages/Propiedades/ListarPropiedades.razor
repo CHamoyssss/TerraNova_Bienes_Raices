@@ -1,0 +1,308 @@
+@page "/propiedades"
+@inject ServicioPropiedades ServicioPropiedades
+@inject NavigationManager NavigationManager
+
+@inject Services.ToastService ToastService
+@inject ServicioAutenticacion ServicioAutenticacion
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Propiedades</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Propiedades</h2>
+            <p class="text-muted mb-0">Gestión del catálogo de propiedades</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-house-add"></i> Nueva Propiedad
+        </button>
+    </div>
+
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <input type="text" class="form-control" placeholder="Buscar por título o dirección..."
+                       @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="tipoFiltro" @bind:after="Filtrar">
+                    <option value="">Todos los tipos</option>
+                    <option value="Casa">Casa</option>
+                    <option value="Departamento">Departamento</option>
+                    <option value="Terreno">Terreno</option>
+                    <option value="Oficina">Oficina</option>
+                    <option value="Local">Local</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" @bind="estadoFiltro" @bind:after="Filtrar">
+                    <option value="">Todos los estados</option>
+                    <option value="Disponible">Disponible</option>
+                    <option value="Reservada">Reservada</option>
+                    <option value="Vendida">Vendida</option>
+                    <option value="Alquilada">Alquilada</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" @onclick="LimpiarFiltros">
+                    <i class="bi bi-x-circle"></i> Limpiar filtros
+                </button>
+            </div>
+        </div>
+
+        @if (!ServicioAutenticacion.EsAdmin)
+        {
+            <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="soloMias" @bind="soloMisPropiedades" @bind:after="Filtrar" />
+                <label class="form-check-label" for="soloMias">
+                    Mostrar solo mis propiedades asignadas
+                </label>
+            </div>
+        }
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!propiedadesFiltradas.Any())
+    {
+        <div class="alert alert-info">No se encontraron propiedades con esos filtros.</div>
+    }
+    else
+    {
+        <div class="panel-card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Zona</th>
+                            <th>Precio</th>
+                            <th>Operación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var propiedad in propiedadesFiltradas)
+                        {
+                            <tr>
+                                <td>@propiedad.Id</td>
+                                <td>
+                                    @propiedad.Titulo
+                                    @if (!ServicioAutenticacion.EsAdmin && propiedad.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador)
+                                    {
+                                        <span class="badge bg-primary ms-1">Mía</span>
+                                    }
+                                </td>
+                                <td>@propiedad.Tipo</td>
+                                <td>@propiedad.Zona</td>
+                                <td>@("$" + propiedad.Precio.ToString("N0"))</td>
+                                <td>@propiedad.TipoOperacion</td>
+                                <td>
+                                    <span class="badge @ObtenerClaseEstado(propiedad.Estado)">@propiedad.Estado</span>
+                                </td>
+                                <td>
+                                    @if (PuedeEditar(propiedad))
+                                    {
+                                        <button class="btn btn-sm btn-warning me-1" @onclick="() => IrAEditar(propiedad.Id)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    }
+                                    <button class="btn btn-sm btn-info me-1" @onclick="() => VerDetalle(propiedad.Id)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    @if (ServicioAutenticacion.EsAdmin)
+                                    {
+                                        <button class="btn btn-sm btn-danger" @onclick="() => MostrarConfirmacion(propiedad.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@if (mostrarModalConfirmacion)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar Eliminación
+                    </h5>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <i class="bi bi-house-x text-danger" style="font-size: 3rem;"></i>
+                    <p class="mt-3 mb-0 fw-medium">¿Está seguro que desea eliminar esta propiedad?</p>
+                    <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button class="btn btn-secondary px-4" @onclick="CancelarEliminacion">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </button>
+                    <button class="btn btn-danger px-4" @onclick="EliminarRegistro">
+                        <i class="bi bi-check-lg"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<PropiedadDTO> propiedades = new();
+    private List<PropiedadDTO> propiedadesFiltradas = new();
+    private string textoBusqueda = string.Empty;
+    private string tipoFiltro = string.Empty;
+    private string estadoFiltro = string.Empty;
+    private bool soloMisPropiedades = false;
+    private bool cargando = true;
+    private string? mensajeError;
+    private bool mostrarModalConfirmacion = false;
+    private int idAEliminar;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPropiedades();
+    }
+
+    private async Task CargarPropiedades()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            propiedades = await ServicioPropiedades.Lista();
+            AplicarFiltros();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error al cargar propiedades: {ex.Message}");
+            mensajeError = "No se pudo cargar la lista de propiedades: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Filtrar()
+    {
+        AplicarFiltros();
+    }
+
+    private void AplicarFiltros()
+    {
+        var resultado = propiedades.AsEnumerable();
+
+        if (soloMisPropiedades)
+        {
+            resultado = resultado.Where(p => p.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador);
+        }
+
+        if (!string.IsNullOrEmpty(tipoFiltro))
+            resultado = resultado.Where(p => p.Tipo == tipoFiltro);
+
+        if (!string.IsNullOrEmpty(estadoFiltro))
+            resultado = resultado.Where(p => p.Estado == estadoFiltro);
+
+        if (!string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            var texto = textoBusqueda.ToLower();
+            resultado = resultado.Where(p =>
+                p.Titulo.ToLower().Contains(texto) ||
+                p.Direccion.ToLower().Contains(texto));
+        }
+
+        propiedadesFiltradas = resultado.ToList();
+    }
+
+    private void LimpiarFiltros()
+    {
+        textoBusqueda = string.Empty;
+        tipoFiltro = string.Empty;
+        estadoFiltro = string.Empty;
+        soloMisPropiedades = false;
+        AplicarFiltros();
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/propiedades/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/propiedades/registrar/{id}");
+    }
+
+    private void MostrarConfirmacion(int id)
+    {
+        idAEliminar = id;
+        mostrarModalConfirmacion = true;
+    }
+
+    private void CancelarEliminacion()
+    {
+        mostrarModalConfirmacion = false;
+    }
+
+    private async Task EliminarRegistro()
+    {
+        mostrarModalConfirmacion = false;
+        try
+        {
+            await ServicioPropiedades.Eliminar(idAEliminar);
+            ToastService.ShowSuccess("Propiedad eliminada correctamente");
+            await CargarPropiedades();
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"No se pudo eliminar: {ex.Message}");
+            mensajeError = "No se pudo eliminar: " + ex.Message;
+        }
+    }
+
+    private string ObtenerClaseEstado(string estado)
+    {
+        return estado switch
+        {
+            "Disponible" => "bg-success",
+            "Vendida" => "bg-danger",
+            "Reservada" => "bg-warning text-dark",
+            "Alquilada" => "bg-info text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void VerDetalle(int id)
+    {
+        NavigationManager.NavigateTo($"/propiedades/detalle/{id}");
+    }
+
+    private bool PuedeEditar(PropiedadDTO propiedad)
+    {
+        return ServicioAutenticacion.EsAdmin ||
+               propiedad.IdTrabajador == ServicioAutenticacion.UsuarioActual?.IdTrabajador;
+    }
+}

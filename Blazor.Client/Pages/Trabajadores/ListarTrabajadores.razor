@@ -1,0 +1,224 @@
+﻿@page "/trabajadores"
+@inject ServicioTrabajadores ServicioTrabajadores
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Trabajadores</PageTitle>
+
+<div class="dashboard-container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Trabajadores</h2>
+            <p class="text-muted mb-0">Gestión de agentes y personal</p>
+        </div>
+        <button class="btn btn-primary" @onclick="IrARegistrar">
+            <i class="bi bi-person-badge"></i> Nuevo Trabajador
+        </button>
+    </div>
+
+    <div class="panel-card shadow-sm mb-4 p-3">
+        <input type="text" class="form-control w-50"
+               placeholder="Buscar por nombre, apellido o cargo..."
+               @bind="textoBusqueda" @bind:event="oninput" @onkeyup="Filtrar" />
+    </div>
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    }
+    else if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+    else if (!trabajadoresFiltrados.Any())
+    {
+        <div class="alert alert-info">No se encontraron trabajadores.</div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var trabajador in trabajadoresFiltrados)
+            {
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="asesor-card shadow-sm">
+                        <div class="asesor-foto-wrapper">
+                            <div class="asesor-avatar">
+                                @ObtenerIniciales(trabajador.Nombre, trabajador.Apellido)
+                            </div>
+
+                            <span class="badge-estado @(trabajador.Activo ? "bg-success" : "bg-secondary")">
+                                @(trabajador.Activo ? "Activo" : "Inactivo")
+                            </span>
+                        </div>
+
+                        <div class="asesor-info p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="fw-bold mb-0">@trabajador.Nombre @trabajador.Apellido</h5>
+                                    <p class="text-muted mb-1">@trabajador.Cargo</p>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-telephone"></i> @trabajador.Telefono
+                                    </p>
+                                </div>
+                                <button class="btn btn-sm btn-light rounded-circle" title="Compartir" disabled>
+                                    <i class="bi bi-share"></i>
+                                </button>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-3">
+                                <button class="btn btn-sm btn-warning flex-fill" @onclick="() => IrAEditar(trabajador.Id)">
+                                    <i class="bi bi-pencil"></i> Modificar
+                                </button>
+                                @if (trabajador.Activo)
+                                {
+                                    <button class="btn btn-sm btn-danger flex-fill" @onclick="() => ConfirmarBaja(trabajador.Id)">
+                                        <i class="bi bi-person-dash"></i> Eliminar
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .asesor-card {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: transform 0.15s ease;
+    }
+
+        .asesor-card:hover {
+            transform: translateY(-3px);
+        }
+
+    .asesor-foto-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        background: linear-gradient(135deg, #ff7a00 0%, #ff7a00 50%, #6fcf00 50%, #6fcf00 100%);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .asesor-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.25);
+        border: 3px solid rgba(255,255,255,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .badge-estado {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #fff;
+    }
+</style>
+
+@code {
+    private List<TrabajadorDTO> trabajadores = new();
+    private List<TrabajadorDTO> trabajadoresFiltrados = new();
+    private string textoBusqueda = string.Empty;
+    private bool cargando = true;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTrabajadores();
+    }
+
+    private async Task CargarTrabajadores()
+    {
+        cargando = true;
+        mensajeError = null;
+        try
+        {
+            trabajadores = await ServicioTrabajadores.Lista();
+            trabajadoresFiltrados = trabajadores;
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "No se pudo cargar la lista de trabajadores: " + ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Filtrar()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            trabajadoresFiltrados = trabajadores;
+        }
+        else
+        {
+            var texto = textoBusqueda.ToLower();
+            trabajadoresFiltrados = trabajadores.Where(t =>
+                t.Nombre.ToLower().Contains(texto) ||
+                t.Apellido.ToLower().Contains(texto) ||
+                t.Cargo.ToLower().Contains(texto)).ToList();
+        }
+    }
+
+    private void IrARegistrar()
+    {
+        NavigationManager.NavigateTo("/trabajadores/registrar");
+    }
+
+    private void IrAEditar(int id)
+    {
+        NavigationManager.NavigateTo($"/trabajadores/registrar/{id}");
+    }
+
+    private async Task ConfirmarBaja(int id)
+    {
+        bool confirmado = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro que desea dar de baja a este trabajador?");
+        if (confirmado)
+        {
+            try
+            {
+                await ServicioTrabajadores.Eliminar(id);
+                await CargarTrabajadores();
+            }
+            catch (Exception ex)
+            {
+                mensajeError = "No se pudo dar de baja: " + ex.Message;
+            }
+        }
+    }
+
+    private string ObtenerIniciales(string nombre, string apellido)
+    {
+        var inicialNombre = !string.IsNullOrWhiteSpace(nombre) ? nombre[0].ToString() : "";
+        var inicialApellido = !string.IsNullOrWhiteSpace(apellido) ? apellido[0].ToString() : "";
+        return (inicialNombre + inicialApellido).ToUpper();
+    }
+}

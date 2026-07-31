@@ -1,0 +1,126 @@
+﻿using Blazor.Shared;
+using System.Net.Http.Json;
+
+namespace Blazor.Client.Services
+{
+    public class ServicioPropiedades
+    {
+        private HttpClient Http;
+
+        public ServicioPropiedades(HttpClient http)
+        {
+            Http = http;
+        }
+
+        public async Task<List<PropiedadDTO>> Lista()
+        {
+            var Resultado = await Http.GetFromJsonAsync<ResponseAPI<List<PropiedadDTO>>>("api/Propiedad/Lista");
+
+            if (Resultado != null && Resultado.EsCorrecto)
+            {
+                return Resultado.Valor!;
+            }
+            else
+            {
+                throw new Exception(Resultado?.Mensaje ?? "Error al obtener la lista de propiedades");
+            }
+        }
+
+        public async Task<List<PropiedadDTO>> Disponibles()
+        {
+            var Resultado = await Http.GetFromJsonAsync<ResponseAPI<List<PropiedadDTO>>>("api/Propiedad/Disponibles");
+
+            if (Resultado != null && Resultado.EsCorrecto)
+            {
+                return Resultado.Valor!;
+            }
+            else
+            {
+                throw new Exception(Resultado?.Mensaje ?? "Error al obtener propiedades disponibles");
+            }
+        }
+
+        public async Task<int> Guardar(PropiedadDTO ObjPropiedad)
+        {
+            var Resultado = await Http.PostAsJsonAsync("api/Propiedad/Guardar", ObjPropiedad);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
+            var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
+            if (Respuesta != null && Respuesta.EsCorrecto)
+            {
+                return Respuesta.Valor;
+            }
+            else
+            {
+                throw new Exception(Respuesta?.Mensaje ?? "Error al guardar la propiedad");
+            }
+        }
+
+        public async Task<bool> Eliminar(int Cod)
+        {
+            var Resultado = await Http.DeleteAsync($"api/Propiedad/Eliminar/{Cod}");
+            var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
+            if (Respuesta != null && Respuesta.EsCorrecto)
+            {
+                return Respuesta.Valor > 0;
+            }
+            else
+            {
+                throw new Exception(Respuesta?.Mensaje ?? "Error al eliminar la propiedad");
+            }
+        }
+
+        public async Task<PropiedadDTO> Buscar(int Cod)
+        {
+            var Resultado = await Http.GetFromJsonAsync<ResponseAPI<PropiedadDTO>>($"api/Propiedad/Buscar/{Cod}");
+            if (Resultado != null && Resultado.EsCorrecto)
+            {
+                return Resultado.Valor!;
+            }
+            else
+            {
+                throw new Exception(Resultado?.Mensaje ?? "Error al buscar la propiedad");
+            }
+        }
+
+        public async Task<int> Modificar(PropiedadDTO NuevosDatos)
+        {
+            var Resultado = await Http.PutAsJsonAsync($"api/Propiedad/Modificar/{NuevosDatos.Id}", NuevosDatos);
+
+            if (!Resultado.IsSuccessStatusCode)
+            {
+                var errorBody = await Resultado.Content.ReadAsStringAsync();
+                throw new Exception($"Error del servidor ({(int)Resultado.StatusCode}): {errorBody}");
+            }
+
+            var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
+            if (Respuesta != null && Respuesta.EsCorrecto)
+            {
+                return Respuesta.Valor;
+            }
+            else
+            {
+                throw new Exception(Respuesta?.Mensaje ?? "Error desconocido al modificar la propiedad");
+            }
+        }
+
+        public async Task<int> CambiarEstado(int Cod, string NuevoEstado)
+        {
+            var Resultado = await Http.PutAsync($"api/Propiedad/CambiarEstado/{Cod}/{NuevoEstado}", null);
+            var Respuesta = await Resultado.Content.ReadFromJsonAsync<ResponseAPI<int>>();
+            if (Respuesta != null && Respuesta.EsCorrecto)
+            {
+                return Respuesta.Valor;
+            }
+            else
+            {
+                throw new Exception(Respuesta?.Mensaje ?? "Error al cambiar el estado");
+            }
+        }
+    }
+}
