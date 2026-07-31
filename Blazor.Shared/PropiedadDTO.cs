@@ -49,13 +49,17 @@ namespace Blazor.Shared
 
         public double? Latitud { get; set; }
         public double? Longitud { get; set; }
-        public string NombreTrabajador { get; set; } = null;
 
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+        public string? NombreTrabajador { get; set; }
+
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public virtual TrabajadorDTO? IdTrabajadorNavigation { get; set; }
 
-        public virtual ICollection<VentaDTO> Venta { get; set; } = new List<VentaDTO>();
+        [System.Text.Json.Serialization.JsonIgnore]
+        public virtual ICollection<VentaDTO>? Venta { get; set; }
 
-        public virtual ICollection<VisitaDTO> Visita { get; set; } = new List<VisitaDTO>();
-    
+        [System.Text.Json.Serialization.JsonIgnore]
+        public virtual ICollection<VisitaDTO>? Visita { get; set; }
     }
 }

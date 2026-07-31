@@ -1,5 +1,5 @@
 /* ============================================
-   TERRAVOVA BIENES RA�CES - Estilos personalizados
+   TERRAVOVA BIENES RAÍCES - Estilos personalizados
    ============================================ */
 
 /* === LAYOUT GENERAL === */
@@ -245,7 +245,7 @@ code {
 }
 
 /* ============================================
-   DASHBOARD (Home.razor) - Tarjetas de estad�sticas
+   DASHBOARD (Home.razor) - Tarjetas de estadísticas
    ============================================ */
 .dashboard-container {
     padding-bottom: 1rem;
@@ -312,7 +312,7 @@ code {
             margin-top: 0.15rem;
         }
 
-/* === ACCESOS R�PIDOS === */
+/* === ACCESOS RÁPIDOS === */
 .btn-quick-access {
     background: #f8f9fc;
     border: 1px solid #e8ecf1;
@@ -360,5 +360,5 @@ code {
    ============================================ */
 .leaflet-container {
     border: 1px solid #dde1e6;
-    z-index: 1; /* evita que el mapa quede por encima del sidebar o men�s */
+    z-index: 1; /* evita que el mapa quede por encima del sidebar o menús */
 }

@@ -25,10 +25,13 @@ namespace Blazor.Shared
 
         public string Comentarios { get; set; } = string.Empty;
 
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public virtual ClienteDTO? IdClienteNavigation { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public virtual PropiedadDTO? IdPropiedadNavigation { get; set; }
 
+        [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
         public virtual TrabajadorDTO? IdTrabajadorNavigation { get; set; }
     }
 }
