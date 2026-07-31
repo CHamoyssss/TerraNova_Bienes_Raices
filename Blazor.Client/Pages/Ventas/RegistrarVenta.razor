@@ -95,7 +95,7 @@
                 <div class="row">
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Monto ($)</label>
-                        <input type="number" class="form-control" value="@(venta.Monto)" readonly step="0.01" lang="es" />
+                        <input type="text" class="form-control" value="@($"${venta.Monto:N0}")" readonly lang="es" />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Comisión Generada ($)</label>

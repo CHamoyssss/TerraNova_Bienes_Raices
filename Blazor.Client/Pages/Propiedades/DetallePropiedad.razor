@@ -52,14 +52,22 @@
         <div class="row g-3">
             <div class="col-lg-7">
                 <div class="panel-card shadow-sm p-4 mb-3">
-                    <h5 class="mb-3">Descripci�n</h5>
+                    <h5 class="mb-3">Descripción</h5>
                     <p class="mb-0">
-                        @(string.IsNullOrWhiteSpace(propiedad.Descripcion) ? "Sin descripci�n." : propiedad.Descripcion)
+                        @(string.IsNullOrWhiteSpace(propiedad.Descripcion) ? "Sin descripción." : propiedad.Descripcion)
                     </p>
+
+                    @if (!string.IsNullOrWhiteSpace(propiedad.ImagenUrl))
+                    {
+                        <hr />
+                        <a href="@propiedad.ImagenUrl" target="_blank" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark-pdf"></i> Ver fotos de la propiedad
+                        </a>
+                    }
                 </div>
 
                 <div class="panel-card shadow-sm p-4">
-                    <h5 class="mb-3">Ubicaci�n</h5>
+                    <h5 class="mb-3">Ubicación</h5>
                     <p class="text-muted mb-3">@propiedad.Direccion, @propiedad.Zona</p>
                     @if (propiedad.Latitud.HasValue && propiedad.Longitud.HasValue)
                     {
@@ -67,7 +75,7 @@
                     }
                     else
                     {
-                        <p class="text-muted">No se registr� ubicaci�n en el mapa.</p>
+                        <p class="text-muted">No se registró ubicación en el mapa.</p>
                     }
                 </div>
             </div>
@@ -82,7 +90,7 @@
                         </div>
                         <div class="col-4">
                             <div class="fw-bold fs-4">@propiedad.Banios</div>
-                            <small class="text-muted">Ba�os</small>
+                            <small class="text-muted">Baños</small>
                         </div>
                         <div class="col-4">
                             <div class="fw-bold fs-4">@propiedad.Garajes</div>
@@ -91,8 +99,8 @@
                     </div>
                     <hr />
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">�rea</span>
-                        <strong>@propiedad.AreaM2 m�</strong>
+                        <span class="text-muted">Área</span>
+                        <strong>@propiedad.AreaM2 m²</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Precio</span>
@@ -175,7 +183,7 @@
     [JSInvokable]
     public void ActualizarCoordenadas(double lat, double lng)
     {
-        // No se usa en modo lectura, pero el m�todo debe existir por el contrato de inicializarMapa
+        // No se usa en modo lectura, pero el método debe existir por el contrato de inicializarMapa
     }
 
     public async ValueTask DisposeAsync()

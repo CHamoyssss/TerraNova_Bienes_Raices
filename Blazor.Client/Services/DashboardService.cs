@@ -27,7 +27,7 @@ namespace Blazor.Client.Services
 
         public async Task<DashboardVM> ObtenerDashboardAsync()
         {
-            // Se piden todos los datos en paralelo para que cargue m�s r�pido
+            // Se piden todos los datos en paralelo para que cargue más rápido
             var tareaPropiedades = _servicioPropiedades.Lista();
             var tareaClientes = _servicioClientes.Lista();
             var tareaVentas = _servicioVentas.Lista();
@@ -53,7 +53,7 @@ namespace Blazor.Client.Services
 
             actividadesReales.AddRange(ventas.Select(v => new ActividadReciente
             {
-                Descripcion = $"Nueva transacci�n ({(v.FormaPago == "Alquiler" ? "Alquiler" : "Venta")}) registrada",
+                Descripcion = $"Nueva transacción ({(v.FormaPago == "Alquiler" ? "Alquiler" : "Venta")}) registrada",
                 Icono = "bi-currency-dollar",
                 Fecha = v.Fecha
             }));
